@@ -64,3 +64,7 @@ pub struct Kategorie {
     pub messungs_form: Option<String>,
     pub kat_group_id: Option<i64>,
 }
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+pub struct NeedsKat {
+    pub need: i32,
+}

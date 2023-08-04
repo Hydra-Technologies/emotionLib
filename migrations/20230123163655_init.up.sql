@@ -41,8 +41,8 @@ CREATE TABLE schueler(
     fName VARCHAR(255), 
     lName VARCHAR(255), 
     klasse VARCHAR(10),
-    bDay VARCHAR(100),
     gesch CHAR,
+    birth_year INT,
     age INT,
     aufsicht boolean, 
     llTime INT,
@@ -354,7 +354,9 @@ INSERT INTO bjsKat(age, gesch, katId) VALUES
     (18, 'm', 10),
     (18, 'm', 4);
 
-INSERT INTO schueler(id, fName, lName, klasse, bDay, gesch, aufsicht) VALUES ('4321', 'Brian2', 'aka Jesus', '5A', '2004-05-14', 'm', true);
-INSERT INTO schueler(id, fName, lName, klasse, bDay, gesch, aufsicht) VALUES ('654321', 'Sir', 'Lancelot2', 'Q1', '2004-05-14', 'm', true);
-INSERT INTO schueler(id, fName, lName, klasse, bDay, age, gesch, aufsicht) VALUES ('1234', 'Franz2', 'Peterson', '5A', '2007-12-23', '15' , 'w', false);
-INSERT INTO schueler(id, fName, lName, klasse, bDay, gesch, aufsicht) VALUES ('3809', 'Frederik2', 'Folkers', 'Q2', '2005-06-20', 'm', true);
+INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('4321', 'Brian2', 'aka Jesus', '5A', 2004, 'm', true);
+INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('654321', 'Sir', 'Lancelot2', 'Q1', 2004, 'm', true);
+INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('1234', 'Franz2', 'Peterson', '5A', 2008,  'w', false);
+INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('3809', 'Frederik2', 'Folkers', 'Q2', 2005, 'm', true);
+
+UPDATE schueler SET age = strftime('%Y')-birth_year;

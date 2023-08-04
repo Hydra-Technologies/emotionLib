@@ -2,10 +2,10 @@ use sqlx::sqlite::SqlitePool;
 pub mod schema;
 mod model;
 
+// not_now_TODO write class with all the Functions (but not today)
 pub struct EmotionCon {
     pub database: SqlitePool
 }
-
 impl EmotionCon {
     async fn get_schueler(self, id: &i32) -> Result<schema::SimpleSchueler, i32> {
         interact::get_schueler(id, &self.database).await
@@ -214,7 +214,7 @@ pub mod interact {
     pub async fn get_bjs_kat_groups(id: i32, db: &SqlitePool) -> Vec<Vec<i32>> {
         let mut result: Vec<Vec<i32>> = Vec::new();
 
-        let mut query_result = sqlx::query_as!(model::KatGroup, r#"
+        let query_result = sqlx::query_as!(model::KatGroup, r#"
         SELECT katId as id, kateGroupId as group_id FROM bjsKat
         INNER JOIN schueler ON schueler.age = bjsKat.age AND schueler.gesch = bjsKat.gesch
         INNER JOIN kategorien ON kategorien.id = katId
@@ -263,6 +263,31 @@ pub mod interact {
         result_vec.sort();
         let lowest = result_vec.first().unwrap().to_owned();
         Ok((result_vec.into_iter().sum::<i32>()) - lowest)
+    }
+
+    pub async fn needs_kat (schueler_id: i32, kategorie_id: i32, db: &SqlitePool) -> Result<schema::NeedsKat, i32> {
+
+        let dosb_result = sqlx::query_as!(model::NeedsKat, r#"
+        SELECT (dosbKat.gesch NOT NULL) as need FROM schueler
+        LEFT JOIN dosbKat ON schueler.gesch = dosbKat.gesch AND dosbKat.age = schueler.age AND dosbKat.katId = ?
+        WHERE schueler.id = ?
+        "#, kategorie_id, schueler_id).fetch_one(db).await;
+        let dosb = match dosb_result {
+            Ok(r) => r,
+            Err(_e) => return Err(404)
+        };
+
+        let bjs_result = sqlx::query_as!(model::NeedsKat, r#"
+        SELECT (bjsKat.gesch NOT NULL) as need FROM schueler
+        LEFT JOIN bjsKat ON schueler.gesch = bjsKat.gesch AND bjsKat.age = schueler.age AND bjsKat.katId = ?
+        WHERE schueler.id = ?
+        "#, kategorie_id, schueler_id).fetch_one(db).await;
+        let bjs = match bjs_result {
+            Ok(r) => r,
+            Err(_e) => return Err(404)
+        };
+
+        Ok(schema::NeedsKat{dosb: dosb.need != 0, bjs: bjs.need != 0})
     }
 
     pub async fn add_versuch (versuch: schema::SimpleVersuch, vouch_name: String, db: &SqlitePool) -> i32 {
@@ -434,6 +459,11 @@ mod tests {
     }
 
     #[actix_rt::test]
+    async fn test_db_migration() {
+        let _ = migrate_example_db().await;
+    }
+
+    #[actix_rt::test]
     async fn get_schueler() {
         let db = migrate_example_db().await;
         let test_schueler = interact::get_schueler(&1234, &db).await.unwrap();
@@ -554,6 +584,22 @@ mod tests {
         let db = migrate_example_db().await;
         let test = interact::get_bjs_kat_groups(1234, &db).await;
         assert_eq!(test, vec![vec![2,3],vec![6,7],vec![10],vec![4,5]]);
+    }
+
+    #[actix_rt::test]
+    async fn need_kat() {
+        let db = migrate_example_db().await;
+        let kat3 = interact::needs_kat(1234,3, &db).await.unwrap();
+        assert!(kat3.bjs);
+        assert!(kat3.dosb);
+
+        let kat5 = interact::needs_kat(1234,5, &db).await.unwrap();
+        assert!(kat5.bjs);
+        assert!(!kat5.dosb);
+
+        let kat1 = interact::needs_kat(1234,1, &db).await.unwrap();
+        assert!(!kat1.bjs);
+        assert!(!kat1.dosb);
     }
 }
 

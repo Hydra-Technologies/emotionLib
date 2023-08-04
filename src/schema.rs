@@ -48,3 +48,9 @@ pub struct Kategorie {
     pub messungs_form: String,
     pub kat_group_id: i64,
 }
+
+#[derive(Debug, PartialEq, Serialize)]
+pub struct NeedsKat {
+    pub dosb: bool,
+    pub bjs: bool,
+}
