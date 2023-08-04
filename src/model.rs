@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use serde_json::de::SliceRead;
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct SimpleSchueler {
