@@ -1,5 +1,5 @@
 use sqlx::sqlite::SqlitePool;
-mod schema;
+pub mod schema;
 mod model;
 
 pub struct EmotionCon {
