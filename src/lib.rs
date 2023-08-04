@@ -12,7 +12,7 @@ impl EmotionCon {
     }
 }
 
-mod interact {
+pub mod interact {
     use sqlx::SqlitePool;
     use crate::model;
     use crate::schema;
