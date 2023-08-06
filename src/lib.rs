@@ -290,9 +290,9 @@ pub mod interact {
         Ok(schema::NeedsKat{dosb: dosb.need != 0, bjs: bjs.need != 0})
     }
 
-    pub async fn add_versuch (versuch: schema::SimpleVersuch, vouch_name: String, db: &SqlitePool) -> i32 {
-        if !check_schueler_id(&versuch.schueler_id) { return 400; }
-        if !check_kategorie_id(&versuch.kategorie_id, db).await { return 400; }
+    pub async fn add_versuch (versuch: schema::SimpleVersuch, vouch_name: String, db: &SqlitePool) -> Result<i32,i32> {
+        if !check_schueler_id(&versuch.schueler_id) { return Err(400); }
+        if !check_kategorie_id(&versuch.kategorie_id, db).await { return Err(400); }
 
         // get Current time
         let current_timestamp: i64 = SystemTime::now()
@@ -305,7 +305,7 @@ pub mod interact {
     "#, vouch_name, versuch.schueler_id, versuch.kategorie_id, versuch.wert, current_timestamp)
             .fetch_one(db).await.unwrap();
 
-        return v.id.unwrap() as i32;
+        return Ok(v.id.unwrap() as i32);
     }
 
     pub async fn get_versuch_by_id (id: i32, db: &SqlitePool) -> Result<schema::NormVersuch, i32> {
