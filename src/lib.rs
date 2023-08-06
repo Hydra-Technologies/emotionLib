@@ -262,7 +262,7 @@ pub mod interact {
         }
         result_vec.sort();
         let mut lowest = 0;
-        if result_vec.len() < 4 {
+        if result_vec.len() >= 4 {
             lowest = result_vec.first().unwrap().to_owned();
         }
         Ok((result_vec.into_iter().sum::<i32>()) - lowest)
