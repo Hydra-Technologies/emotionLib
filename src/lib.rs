@@ -261,7 +261,10 @@ pub mod interact {
             tmp_points = 0;
         }
         result_vec.sort();
-        let lowest = result_vec.first().unwrap().to_owned();
+        let mut lowest = 0;
+        if result_vec.len() < 4 {
+            lowest = result_vec.first().unwrap().to_owned();
+        }
         Ok((result_vec.into_iter().sum::<i32>()) - lowest)
     }
 
@@ -510,7 +513,7 @@ mod tests {
         let db = migrate_example_db().await;
         let v1 = schema::SimpleVersuch{schueler_id: 1234, wert: 15.0, kategorie_id: 10};
         let v1_copy = schema::SimpleVersuch{schueler_id: 1234, wert: 15.0, kategorie_id: 10};
-        let v1_id = interact::add_versuch(v1, "ABCA".to_string(), &db).await;
+        let v1_id = interact::add_versuch(v1, "ABCA".to_string(), &db).await.unwrap();
         let get_v1 = interact::get_versuch_by_id(v1_id, &db).await.unwrap();
 
         assert_eq!(&v1_copy.schueler_id, &(get_v1.schueler_id as i32));
@@ -556,12 +559,12 @@ mod tests {
         let db = migrate_example_db().await;
         let mut versuch_ids: Vec<i32> = Vec::new();
         let _ = interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 10.7, kategorie_id: 1}, "AWDF".to_string(), &db).await;
-        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 14.0, kategorie_id: 3}, "AWDF".to_string(), &db).await);
+        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 14.0, kategorie_id: 3}, "AWDF".to_string(), &db).await.unwrap());
         let _ = interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 15.0, kategorie_id: 3}, "AWDF".to_string(), &db).await;
-        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 3.7, kategorie_id: 7}, "AWDF".to_string(), &db).await);
-        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 1.4, kategorie_id: 6}, "AWDF".to_string(), &db).await);
-        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 14.0, kategorie_id: 10}, "AWDF".to_string(), &db).await);
-        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 702.0, kategorie_id: 5}, "AWDF".to_string(), &db).await);
+        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 3.7, kategorie_id: 7}, "AWDF".to_string(), &db).await.unwrap());
+        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 1.4, kategorie_id: 6}, "AWDF".to_string(), &db).await.unwrap());
+        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 14.0, kategorie_id: 10}, "AWDF".to_string(), &db).await.unwrap());
+        versuch_ids.push(interact::add_versuch(schema::SimpleVersuch{schueler_id: 1234, wert: 702.0, kategorie_id: 5}, "AWDF".to_string(), &db).await.unwrap());
         let _ =interact::add_versuch(schema::SimpleVersuch{schueler_id: 3809, wert: 242.0, kategorie_id: 4}, "AWDF".to_string(), &db).await;
 
         //time_test!();
