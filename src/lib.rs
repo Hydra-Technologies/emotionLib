@@ -249,7 +249,6 @@ pub mod interact {
 
         let mut result_vec: Vec<i32> = Vec::new();
         let mut tmp_points: i32 = 0;
-        println!("{}", serde_json::json!(kat_groups));
 
         for g in kat_groups {
             for v in versuche.to_owned() {
@@ -257,7 +256,6 @@ pub mod interact {
                     tmp_points = v.punkte as i32;
                 }
             }
-            println!("{}", tmp_points);
             result_vec.push(tmp_points);
             tmp_points = 0;
         }
