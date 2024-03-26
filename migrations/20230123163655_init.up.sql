@@ -9,8 +9,7 @@ CREATE TABLE katGroups(
 CREATE TABLE kategorien(
     id INT,
     name VARCHAR(255),
-    lauf BOOLEAN, 
-    einheit CHAR, 
+    einheit CHAR,
     maxVers INT, 
     messungsForm VARCHAR(255),
     kateGroupId INT,
@@ -124,18 +123,18 @@ INSERT INTO katGroups(id, name, numPflicht) VALUES
     (3, 'Wurf/Stoß', 1),
     (4, 'Ausdauer', 1);
 
-INSERT INTO kategorien(id, name, einheit, maxVers, lauf, messungsForm, kateGroupId) VALUES
-    (1, '50m', 's', 1, true, '{2;s},{2;cs}s', 1),
-    (2, '75m', 's', 1, true, '{2;s},{2;cs}s', 1),
-    (3, '100m', 's', 1, true, '{2;s},{2;cs}s', 1),
-    (4, '800m', 's', 1, true, '{1;min}min {2;s}s', 4),
-    (5, '2000m', 's', 1, true, '{2;min}min {2;s}s', 4),
-    (6, 'Hochsprung', 'm', 3, false, '{1;m},{2;cm}', 2),
-    (7, 'Weitsprung', 'm', 3, false, '{1;m},{2;cm}', 2),
-    (8, 'Kugelstoß', 'm', 3, false, '{2;m},{1;dm}', 3),
-    (9, 'Schleuderball', 'm', 3, false, '{2;m},{1;dm}', 3),
-    (10, '200g Wurf', 'm', 3, false, '{2;m},{1;dm}', 3),
-    (11, '80g Wurf', 'm', 3, false, '{2;m},{1;dm}', 3);
+INSERT INTO kategorien(id, name, einheit, maxVers, messungsForm, kateGroupId) VALUES
+    (1, '50m', 's', 1, '{2;s},{2;cs}s', 1),
+    (2, '75m', 's', 1, '{2;s},{2;cs}s', 1),
+    (3, '100m', 's', 1, '{2;s},{2;cs}s', 1),
+    (4, '800m', 's', 1, '{1;min}min {2;s}s', 4),
+    (5, '2000m', 's', 1, '{2;min}min {2;s}s', 4),
+    (6, 'Hochsprung', 'm', 3, '{1;m},{2;cm}', 2),
+    (7, 'Weitsprung', 'm', 3, '{1;m},{2;cm}', 2),
+    (8, 'Kugelstoß', 'm', 3, '{2;m},{1;dm}', 3),
+    (9, 'Schleuderball', 'm', 3, '{2;m},{1;dm}', 3),
+    (10, '200g Wurf', 'm', 3, '{2;m},{1;dm}', 3),
+    (11, '80g Wurf', 'm', 3, '{2;m},{1;dm}', 3);
 
 INSERT INTO formVars(katId, gesch, a, c) VALUES
     (1, 'w', 3.64800, 0.00660),

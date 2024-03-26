@@ -1,5 +1,5 @@
 -- Add down migration script here
-CREATE TABLE IF EXISTS keys;
-CREATE TABLE IF EXISTS endpoints;
-CREATE TABLE IF EXISTS groups;
-CREATE TABLE IF EXISTS school;
+DROP TABLE IF EXISTS keys;
+DROP TABLE IF EXISTS endpoints;
+DROP TABLE IF EXISTS groups;
+DROP TABLE IF EXISTS school;
