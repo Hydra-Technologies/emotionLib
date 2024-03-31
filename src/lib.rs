@@ -2,7 +2,7 @@ use sqlx::sqlite::SqlitePool;
 use time_test::time_test;
 mod model;
 pub mod schema;
-mod manage;
+pub mod manage;
 
 // not_now_TODO write class with all the Functions (but not today)
 pub struct EmotionCon {

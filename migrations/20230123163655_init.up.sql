@@ -7,9 +7,10 @@ CREATE TABLE katGroups(
 );
 
 CREATE TABLE kategorien(
-    id INT,
+    id INTEGER,
     name VARCHAR(255),
     einheit CHAR,
+    lauf BOOLEAN,
     maxVers INT, 
     messungsForm VARCHAR(255),
     kateGroupId INT,
@@ -36,7 +37,8 @@ CREATE TABLE ageGroups(
 );
 
 CREATE TABLE schueler(
-    id int, 
+    id INT,
+    external_id INT,
     fName VARCHAR(255), 
     lName VARCHAR(255), 
     klasse VARCHAR(10),
@@ -92,6 +94,14 @@ CREATE TABLE loginKeys(
     FOREIGN KEY (aufsichtId) REFERENCES schueler(id)
 );
 
+INSERT INTO katGroups(id, name, numPflicht) VALUES
+    (1, 'Sprint', 1),
+    (2, 'Sprung', 1),
+    (3, 'Wurf/Stoß', 1),
+    (4, 'Ausdauer', 1);
+
+
+/*
 INSERT INTO ageGroups(age, gesch, silber, gold) VALUES
     (10, 'w', 625, 825),
     (11, 'w', 700, 900),
@@ -117,11 +127,6 @@ INSERT INTO ageGroups(age, gesch, silber, gold) VALUES
     (19, 'm', 1275, 1550),
     (20, 'm', 1275, 1550);
 
-INSERT INTO katGroups(id, name, numPflicht) VALUES
-    (1, 'Sprint', 1),
-    (2, 'Sprung', 1),
-    (3, 'Wurf/Stoß', 1),
-    (4, 'Ausdauer', 1);
 
 INSERT INTO kategorien(id, name, einheit, maxVers, messungsForm, kateGroupId) VALUES
     (1, '50m', 's', 1, '{2;s},{2;cs}s', 1),
@@ -358,4 +363,4 @@ INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALU
 INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('1234', 'Franz2', 'Peterson', '5A', 2008,  'w', false);
 INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('3809', 'Frederik2', 'Folkers', 'Q2', 2005, 'm', true);
 
-UPDATE schueler SET age = strftime('%Y')-birth_year;
+UPDATE schueler SET age = strftime('%Y')-birth_year;*/

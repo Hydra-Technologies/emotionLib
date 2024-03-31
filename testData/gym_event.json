@@ -1,0 +1,11 @@
+{
+  "name": "Test_Event 2024",
+  "vorlage": 2023,
+  "kategorien": [
+    {
+      "Vorlage": {"id": 1,
+      "bjs": false,
+      "dosb": true
+    }}
+  ]
+}
