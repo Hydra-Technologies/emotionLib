@@ -63,6 +63,20 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
     return Ok(());
 }
 
+pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::Kategorie>, HttpResponse> {
+    let mut kat_list: Vec<schema::Kategorie> = vec![];
+    for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
+        if let Ok(entry) = entry_result {
+            if entry.file_name() != "init.json" {
+                if let Ok(k) = serde_json::from_reader(File::open(entry.path()).unwrap()) {
+                    kat_list.push(k);
+                }
+            }
+        }
+    }
+    return Ok(kat_list);
+}
+
 pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
     let vorlagen = walkdir::WalkDir::new(vorlagen_dir);
     for vorlage in vorlagen {
@@ -132,7 +146,7 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
 pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<schema::Kategorie>, HttpResponse> {
     let files = match fs::read_dir([vorlagen_path, vorlage.to_string(), "/".to_string()].join("")) {
         Ok(p) => p,
-        Err(e) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Vorlagen Dir not found"})))
+        Err(_) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Vorlagen Dir not found"})))
     };
 
     let mut kategorien: Vec<schema::Kategorie> = vec![];
@@ -145,7 +159,7 @@ pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<sch
                     if let Ok(reader) = File::open(f.path()) {
                         let kat: schema::Kategorie = match serde_json::from_reader(reader) {
                             Ok(k) => k,
-                            Err(e) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Id nicht gefunden"})))
+                            Err(_) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Id nicht gefunden"})))
                         };
                         kategorien.push(kat);
                     } else {
@@ -160,14 +174,12 @@ pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<sch
 
 
 async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsAlterBewertung>) -> Result<(), HttpResponse> {
-    info!("Hello before :)");
     for bew in bjs_alter_bewertungen {
         let gesch_str = bew.gesch.to_string();
         if sqlx::query!("INSERT INTO ageGroups(age,gesch, gold, silber) VALUES (?,?,?,?)", bew.alter, gesch_str , bew.ehren, bew.sieger).execute(db).await.is_err() {
             return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting bjs bewertungen"})));
         }
     }
-    info!("hello :> ");
     Ok(())
 }
 
@@ -253,6 +265,9 @@ mod tests {
 
     #[sqlx::test]
     pub async fn create_gym_test_event() {
+        use std::time::Instant;
+        let now = Instant::now();
+
         let _ = fs::remove_file("testData/Test_Event_2024.db");
         let input_file = "testData/gym_event.json";
         let reader = File::open(input_file).unwrap();
@@ -260,5 +275,14 @@ mod tests {
         let event: EventConstructor = serde_json::from_reader(reader).unwrap();
 
         create_event("testData/".to_string(), event).await.unwrap();
+
+        println!("Created Event: {:.2?}", now.elapsed());
+    }
+    
+    #[test]
+    pub fn get_list_of_events() {
+        let k_r = get_kat_list_from_vorlage("vorlagen/".to_string(), 2023);
+        let k = k_r.unwrap();
+        println!("{:?}", k);
     }
 }
