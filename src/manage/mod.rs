@@ -86,7 +86,7 @@ pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
     return Ok(());
 }
 
-pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, HttpResponse> {
+fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, HttpResponse> {
     let path_string = [vorlagen_dir, year.to_string(), "/".to_string(), vorlage.id.to_string(), ".json".to_string()].join("");
 
     let path = Path::new(&path_string);
