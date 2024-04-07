@@ -1,4 +1,6 @@
 mod schema;
+
+use std::fs;
 use std::fs::File;
 use std::path::Path;
 use sqlx::{Sqlite, SqlitePool};
@@ -7,7 +9,7 @@ use sqlx::migrate::MigrateDatabase;
 use walkdir;
 use std::string::String;
 use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
-use log::info;
+use log::{info, warn};
 
 pub async fn create_event(school_dir: String, data: schema::EventConstructor) -> Result<(), HttpResponse> {
     let db_url = [school_dir, data.name.clone(), ".db".to_string()].join("");
@@ -86,7 +88,7 @@ pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
     return Ok(());
 }
 
-fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, HttpResponse> {
+pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, HttpResponse> {
     let path_string = [vorlagen_dir, year.to_string(), "/".to_string(), vorlage.id.to_string(), ".json".to_string()].join("");
 
     let path = Path::new(&path_string);
@@ -127,6 +129,35 @@ fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Katego
     });
 }
 
+pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<schema::Kategorie>, HttpResponse> {
+    let files = match fs::read_dir([vorlagen_path, vorlage.to_string(), "/".to_string()].join("")) {
+        Ok(p) => p,
+        Err(e) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Vorlagen Dir not found"})))
+    };
+
+    let mut kategorien: Vec<schema::Kategorie> = vec![];
+    for file in files {
+        match file.unwrap() {
+            f => {
+                let name_vec: Vec<String> = f.file_name().to_str().unwrap().split(".").map(|s| s.to_string()).collect();
+                let id = name_vec[0].parse::<i32>();
+                if id.is_ok() {
+                    if let Ok(reader) = File::open(f.path()) {
+                        let kat: schema::Kategorie = match serde_json::from_reader(reader) {
+                            Ok(k) => k,
+                            Err(e) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Id nicht gefunden"})))
+                        };
+                        kategorien.push(kat);
+                    } else {
+                        warn!("Couldnt read File: {}", f.path().to_str().unwrap_or("Couldnt unwrap Path"));
+                    };
+                }
+            }
+        }
+    }
+    return Ok(kategorien);
+}
+
 
 async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsAlterBewertung>) -> Result<(), HttpResponse> {
     info!("Hello before :)");
@@ -142,7 +173,7 @@ async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsA
 
 async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), HttpResponse>{
     let form = ["{",&kat.digits_before.to_string(),";", kat.einheit.as_str(), "}, {",kat.digits_after.to_string().as_str(), "; c", &kat.einheit.to_string().as_str(), "}", &kat.einheit.to_string()].map(|r| r.to_string()).join("");
-    let lauf = (kat.kat_group == 1 || kat.kat_group == 4);
+    let lauf = kat.kat_group == 1 || kat.kat_group == 4;
     let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, messungsForm, kateGroupId) VALUES (?,?,?,100,?,?)",
         kat.name, kat.einheit, lauf, form, kat.kat_group).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
