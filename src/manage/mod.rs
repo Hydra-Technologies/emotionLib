@@ -4,18 +4,25 @@ use std::fs;
 use std::fs::File;
 use std::path::Path;
 use sqlx::{Sqlite, SqlitePool};
-use actix_web::HttpResponse;
 use sqlx::migrate::MigrateDatabase;
 use walkdir;
 use std::string::String;
 use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
 use log::{info, warn};
 
-pub async fn create_event(school_dir: String, data: schema::EventConstructor) -> Result<(), HttpResponse> {
+#[derive(Debug)]
+pub enum ManageError {
+    Internal { message: String },
+    Conflict { message: String },
+    NotFound { message: String },
+    BadReque { message: String }
+}
+
+pub async fn create_event(school_dir: String, data: schema::EventConstructor) -> Result<(), ManageError> {
     let db_url = [school_dir, data.name.clone(), ".db".to_string()].join("");
     // check if database exists
     if Sqlite::database_exists(db_url.as_str()).await.unwrap_or(true) {
-        return Err(HttpResponse::Conflict().json(serde_json::json!({"message": "Event Alread exists (or error)"})));
+        return Err(ManageError::Conflict { message: "Event Alread exists (or error)".to_string() });
     }
     info!("checked if db exists ");
 
@@ -23,7 +30,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
     match Sqlite::create_database(db_url.as_str()).await {
         Err(e) =>  {
             info!("{}",e.to_string());
-            return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Something went wrong while creating Table"})));},
+            return Err(ManageError::Internal { message: "Something went wrong while creating Table".to_string() })},
         Ok(_) => ()
     };
     info!("created DB");
@@ -53,7 +60,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
                 schema::ConstructKategorie::Vorlage(v) =>  {
                     match data.vorlage {
                         Some(y) => insert_kat_in_db(&con, get_kat_from_vorlage("vorlagen/".to_string(), y, v)?).await,
-                        None => return Err(HttpResponse::BadRequest().json(serde_json::json!({"message": "No Vorlage specified"})))
+                        None => return Err(ManageError::BadReque { message: "No Vorlage specified".to_string() })
                     }
                 }
             }?
@@ -63,7 +70,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
     return Ok(());
 }
 
-pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::Kategorie>, HttpResponse> {
+pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::Kategorie>, ManageError> {
     let mut kat_list: Vec<schema::Kategorie> = vec![];
     for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
         if let Ok(entry) = entry_result {
@@ -102,20 +109,20 @@ pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
     return Ok(());
 }
 
-pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, HttpResponse> {
+pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, ManageError> {
     let path_string = [vorlagen_dir, year.to_string(), "/".to_string(), vorlage.id.to_string(), ".json".to_string()].join("");
 
     let path = Path::new(&path_string);
     let reader = match File::open(path) {
         Err(_) => {
             let message = format!("Kategorie {} konnte nicht gefunden werden", path.to_str().unwrap());
-            return Err(HttpResponse::NotFound().json(serde_json::json!({"message": message})));
+            return Err(ManageError::NotFound { message });
         },
         Ok(f) => std::io::BufReader::new(f)
     };
 
     let kat: Kategorie =  match serde_json::from_reader(reader) {
-        Err(_) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while reading Kategorie"}))),
+        Err(_) => return Err(ManageError::Internal{ message: "Error while reading Kategorie".to_string()}),
         Ok(r) => r
     };
 
@@ -143,10 +150,10 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
     });
 }
 
-pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<schema::Kategorie>, HttpResponse> {
+pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<schema::Kategorie>, ManageError> {
     let files = match fs::read_dir([vorlagen_path, vorlage.to_string(), "/".to_string()].join("")) {
         Ok(p) => p,
-        Err(_) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Vorlagen Dir not found"})))
+        Err(_) => return Err(ManageError::Internal{ message: "Vorlagen Dir not found".to_string()})
     };
 
     let mut kategorien: Vec<schema::Kategorie> = vec![];
@@ -159,7 +166,7 @@ pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<sch
                     if let Ok(reader) = File::open(f.path()) {
                         let kat: schema::Kategorie = match serde_json::from_reader(reader) {
                             Ok(k) => k,
-                            Err(_) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Id nicht gefunden"})))
+                            Err(_) => return Err(ManageError::Internal{ message: "Id nicht gefunden".to_string() })
                         };
                         kategorien.push(kat);
                     } else {
@@ -173,23 +180,23 @@ pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<sch
 }
 
 
-async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsAlterBewertung>) -> Result<(), HttpResponse> {
+async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsAlterBewertung>) -> Result<(), ManageError> {
     for bew in bjs_alter_bewertungen {
         let gesch_str = bew.gesch.to_string();
         if sqlx::query!("INSERT INTO ageGroups(age,gesch, gold, silber) VALUES (?,?,?,?)", bew.alter, gesch_str , bew.ehren, bew.sieger).execute(db).await.is_err() {
-            return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting bjs bewertungen"})));
+            return Err(ManageError::Internal{ message: "Error while inserting bjs bewertungen".to_string() });
         }
     }
     Ok(())
 }
 
-async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), HttpResponse>{
+async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), ManageError>{
     let form = ["{",&kat.digits_before.to_string(),";", kat.einheit.as_str(), "}, {",kat.digits_after.to_string().as_str(), "; c", &kat.einheit.to_string().as_str(), "}", &kat.einheit.to_string()].map(|r| r.to_string()).join("");
     let lauf = kat.kat_group == 1 || kat.kat_group == 4;
     let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, messungsForm, kateGroupId) VALUES (?,?,?,100,?,?)",
         kat.name, kat.einheit, lauf, form, kat.kat_group).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
-        Err(e) => return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting into Kategorien", "err": e.to_string()})))
+        Err(e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
     };
 
     info!("Inserted basic");
@@ -200,10 +207,10 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
 
         // the a and c numbers
         if sqlx::query!("INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'w',?,?)", id, bjs.a_w, bjs.c_w).execute(db).await.is_err() {
-            return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting w a and c"})));
+            return Err(ManageError::Internal{ message: "Error while inserting w a and c".to_string() });
         }
         if sqlx::query!("INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'m',?,?)", id, bjs.a_m, bjs.c_m).execute(db).await.is_err() {
-            return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting m a and c"})));
+            return Err(ManageError::Internal{ message: "Error while inserting m a and c".to_string()});
         }
 
         // the age groups
@@ -211,7 +218,7 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
             match sqlx::query!("INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'w', ?)", id, age).execute(db).await {
                 Err(e) => {
                     info!("{}", e);
-                    return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting w alterklassen "})));
+                    return Err(ManageError::Internal { message: "Error while inserting w alterklassen ".to_string()});
                 },
                 Ok(_) => ()
             }
@@ -220,7 +227,7 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
 
         for age in bjs.altersklassen_m {
             if sqlx::query!("INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'm', ?)", id, age).execute(db).await.is_err() {
-                return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error whsile inserting m alterklassen"})));
+                return Err(ManageError::Internal { message: "Error while inserting m alterklassen".to_string()});
             }
         }
     }
@@ -234,13 +241,13 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
         // Insert altersklasseen
         for age_bew in dosb.altersklassen_w {
             if sqlx::query!("INSERT INTO dosbKat(katId, gesch, age, gold, silber, bronze) VALUES (?, 'w', ?, ?, ?, ?)", id, age_bew.alter, age_bew.gold, age_bew.silber, age_bew.bronze).execute(db).await.is_err() {
-                return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting w alterklassen"})));
+                return Err(ManageError::Internal{ message: "Error while inserting w alterklassen".to_string()});
             }
         }
 
         for age_bew in dosb.altersklassen_m {
             if sqlx::query!("INSERT INTO dosbKat(katId, gesch, age, gold, silber, bronze) VALUES (?, 'm', ?, ?, ?, ?)", id, age_bew.alter, age_bew.gold, age_bew.silber, age_bew.bronze).execute(db).await.is_err() {
-                return Err(HttpResponse::InternalServerError().json(serde_json::json!({"message": "Error while inserting m alterklassen"})));
+                return Err(ManageError::Internal{ message: "Error while inserting m alterklassen".to_string() });
             }
         }
     }
