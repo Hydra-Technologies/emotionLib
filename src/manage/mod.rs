@@ -8,7 +8,7 @@ use sqlx::migrate::MigrateDatabase;
 use walkdir;
 use std::string::String;
 use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
-use log::{info, warn};
+use log::{debug, info, warn};
 
 #[derive(Debug)]
 pub enum ManageError {
@@ -30,7 +30,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
     match Sqlite::create_database(db_url.as_str()).await {
         Err(e) =>  {
             info!("{}",e.to_string());
-            return Err(ManageError::Internal { message: "Something went wrong while creating Table".to_string() })},
+            return Err(ManageError::Internal { message: ["Something went wrong while creating Table".to_string(), e.to_string()].join("") })},
         Ok(_) => ()
     };
     info!("created DB");
@@ -74,6 +74,7 @@ pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec
     let mut kat_list: Vec<schema::Kategorie> = vec![];
     for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
         if let Ok(entry) = entry_result {
+            debug!("Path: {:?}", entry.path());
             if entry.file_name() != "init.json" {
                 if let Ok(k) = serde_json::from_reader(File::open(entry.path()).unwrap()) {
                     kat_list.push(k);
@@ -293,3 +294,6 @@ mod tests {
         println!("{:?}", k);
     }
 }
+
+    #[test]
+    pub fn get_
