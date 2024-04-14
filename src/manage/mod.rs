@@ -18,7 +18,7 @@ pub enum ManageError {
     BadReque { message: String }
 }
 
-pub async fn create_event(school_dir: String, data: schema::EventConstructor) -> Result<(), ManageError> {
+pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema::EventConstructor) -> Result<(), ManageError> {
     let db_url = [school_dir, data.name.clone(), ".db".to_string()].join("");
     // check if database exists
     if Sqlite::database_exists(db_url.as_str()).await.unwrap_or(true) {
@@ -46,7 +46,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
     if data.bjs_bewertung.is_some() {
         insert_bjs_bewertungen(&con, data.bjs_bewertung.unwrap()).await?;
     } else {
-        let path = ["vorlagen/".to_string(), data.vorlage.unwrap().to_string(), "/init.json".to_string()].join("");
+        let path = [vorlagen_dir.clone(), data.vorlage.unwrap().to_string(), "/init.json".to_string()].join("");
         let reader = std::io::BufReader::new(File::open(path).unwrap());
         let bjs: EventConstructor = serde_json::from_reader(reader).unwrap();
 
@@ -59,7 +59,7 @@ pub async fn create_event(school_dir: String, data: schema::EventConstructor) ->
                 schema::ConstructKategorie::Kategorie(k) => insert_kat_in_db(&con, k).await,
                 schema::ConstructKategorie::Vorlage(v) =>  {
                     match data.vorlage {
-                        Some(y) => insert_kat_in_db(&con, get_kat_from_vorlage("vorlagen/".to_string(), y, v)?).await,
+                        Some(y) => insert_kat_in_db(&con, get_kat_from_vorlage(vorlagen_dir.clone(), y, v)?).await,
                         None => return Err(ManageError::BadReque { message: "No Vorlage specified".to_string() })
                     }
                 }
@@ -282,7 +282,7 @@ mod tests {
 
         let event: EventConstructor = serde_json::from_reader(reader).unwrap();
 
-        create_event("testData/".to_string(), event).await.unwrap();
+        create_event("testData/".to_string(), "vorlagen/".to_string(), event).await.unwrap();
 
         println!("Created Event: {:.2?}", now.elapsed());
     }
@@ -294,6 +294,3 @@ mod tests {
         println!("{:?}", k);
     }
 }
-
-    #[test]
-    pub fn get_
