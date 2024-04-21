@@ -45,7 +45,8 @@ pub struct Kategorie {
     pub lauf: bool,
     pub einheit: char,
     pub max_vers: i64,
-    pub messungs_form: String,
+    pub digits_before: i64,
+    pub digits_after: i64,
     pub kat_group_id: i64,
 }
 

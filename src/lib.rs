@@ -420,7 +420,7 @@ pub mod interact {
 
     pub async fn get_kategorie(id: i32, db: &SqlitePool) -> schema::Kategorie {
         let result = sqlx::query_as!(model::Kategorie, r#"
-        SELECT id, name, lauf, einheit, maxVers as max_vers, messungsForm as messungs_form, kateGroupId as kat_group_id FROM kategorien WHERE id = ?
+        SELECT id, name, lauf, einheit, maxVers as max_vers, digits_before, digits_after, kateGroupId as kat_group_id FROM kategorien WHERE id = ?
         "#, id).fetch_one(db).await;
         return kategorie_model2schema(result.unwrap());
     }
@@ -535,7 +535,8 @@ pub mod interact {
                 .next()
                 .expect("no Unit was given"),
             max_vers: m.max_vers.unwrap(),
-            messungs_form: m.messungs_form.unwrap(),
+            digits_before: m.digits_before.unwrap(),
+            digits_after: m.digits_after.unwrap(),
             kat_group_id: m.kat_group_id.unwrap(),
         }
     }

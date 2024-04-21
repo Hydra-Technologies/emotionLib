@@ -12,7 +12,8 @@ CREATE TABLE kategorien(
     einheit CHAR,
     lauf BOOLEAN,
     maxVers INT, 
-    messungsForm VARCHAR(255),
+    digits_before INT,
+    digits_after INT,
     kateGroupId INT,
     FOREIGN KEY (kateGroupId) REFERENCES katGroups(id),
     PRIMARY KEY (id)

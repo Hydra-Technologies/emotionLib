@@ -61,7 +61,8 @@ pub struct Kategorie {
     pub lauf: Option<bool>,
     pub einheit: Option<String>,
     pub max_vers: Option<i64>,
-    pub messungs_form: Option<String>,
+    pub digits_before: Option<i64>,
+    pub digits_after: Option<i64>,
     pub kat_group_id: Option<i64>,
 }
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
