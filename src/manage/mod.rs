@@ -70,6 +70,20 @@ pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema
     return Ok(());
 }
 
+pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
+    let vorlagen_path = Path::new(&vorlagen_path);
+    let mut vorlagen= vec![];
+    if vorlagen_path.is_dir() {
+        for entry in fs::read_dir(vorlagen_path).unwrap() {
+            let entry = entry.unwrap();
+            if entry.path().is_dir() {
+                vorlagen.push(entry.path().to_str().unwrap().to_string())
+            }
+        }
+    }
+    return vorlagen;
+}
+
 pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::Kategorie>, ManageError> {
     let mut kat_list: Vec<schema::Kategorie> = vec![];
     for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
@@ -197,7 +211,7 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
     let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, messungsForm, kateGroupId) VALUES (?,?,?,100,?,?)",
         kat.name, kat.einheit, lauf, form, kat.kat_group).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
-        Err(e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
+        Err(_e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
     };
 
     info!("Inserted basic");
