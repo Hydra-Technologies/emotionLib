@@ -77,7 +77,10 @@ pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
         for entry in fs::read_dir(vorlagen_path).unwrap() {
             let entry = entry.unwrap();
             if entry.path().is_dir() {
-                vorlagen.push(entry.path().to_str().unwrap().to_string())
+                let filename = entry.file_name().to_str().unwrap().to_string();
+                if filename.parse::<i32>().is_ok() {
+                    vorlagen.push(filename);
+                }
             }
         }
     }
