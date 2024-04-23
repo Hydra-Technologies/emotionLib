@@ -1,17 +1,17 @@
 use sqlx::sqlite::SqlitePool;
-use time_test::time_test;
 mod model;
 pub mod schema;
 pub mod manage;
+pub mod search;
 
 // not_now_TODO write class with all the Functions (but not today)
 pub struct EmotionCon {
     pub database: SqlitePool,
 }
 impl EmotionCon {
-    async fn get_schueler(self, id: &i32) -> Result<schema::SimpleSchueler, i32> {
+    /*async fn get_schueler(self, id: &i32) -> Result<schema::SimpleSchueler, i32> {
         interact::get_schueler(id, &self.database).await
-    }
+    }*/
 }
 
 pub mod interact {
@@ -549,6 +549,7 @@ pub mod interact {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use time_test::time_test;
 
     async fn migrate_example_db() -> SqlitePool {
         let con = SqlitePool::connect(":memory:").await.unwrap();
