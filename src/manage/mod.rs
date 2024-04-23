@@ -206,10 +206,9 @@ async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsA
 }
 
 async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), ManageError>{
-    let form = ["{",&kat.digits_before.to_string(),";", kat.einheit.as_str(), "}, {",kat.digits_after.to_string().as_str(), "; c", &kat.einheit.to_string().as_str(), "}", &kat.einheit.to_string()].map(|r| r.to_string()).join("");
     let lauf = kat.kat_group == 1 || kat.kat_group == 4;
-    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, messungsForm, kateGroupId) VALUES (?,?,?,100,?,?)",
-        kat.name, kat.einheit, lauf, form, kat.kat_group).execute(db).await {
+    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, digits_before, digits_after, kateGroupId) VALUES (?,?,?,100,?,?,?)",
+        kat.name, kat.einheit, lauf, kat.digits_before, kat.digits_after, kat.kat_group).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
         Err(_e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
     };
