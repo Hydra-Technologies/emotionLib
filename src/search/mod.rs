@@ -1,8 +1,8 @@
 pub mod search_schema;
 use sqlx::SqlitePool;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 use futures::future::join_all;
-use self::search_schema::{SchuelerResult, SchuelerResultExtensive};
+use sha256::TrySha256Digest;
 
 #[derive(Debug)]
 pub enum SearchError {
@@ -82,13 +82,22 @@ pub async fn search_database(db: &SqlitePool) -> Result<Vec<search_schema::Schue
     return Ok(schueler_data);
 }
 
+pub async fn search_database_extesive(db: &SqlitePool) -> Result<Vec<search_schema::SchuelerResultExtensive>, SearchError> {
+    let schueler_data = search_database(db).await?;
+    Ok(join_all(schueler_data.into_iter().map(|r| async { result2extensive(r, &db).await })).await)
+}
+
+pub async fn get_db_hash(db_path: String) -> String {
+    return Path::new(&db_path).async_digest().await.unwrap();
+}
+
 async fn result2extensive(result: search_schema::SchuelerResult, db: &SqlitePool) -> search_schema::SchuelerResultExtensive {
     let singel_results = match sqlx::query_file_as!(search_schema::SingleResult, "src/search/getBestTrys.sql", result.id).fetch_all(db).await {
         Ok(r) => r,
         Err(_)  => vec![]
     };
 
-    return SchuelerResultExtensive {
+    return search_schema::SchuelerResultExtensive {
         id: result.id,
         bjs_punkte: result.bjs_punkte,
         bjs_urkunde: result.bjs_urkunde,
