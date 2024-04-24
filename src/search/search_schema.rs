@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 pub enum SortKategorien {
     Age,
     Klasse,
@@ -10,7 +12,7 @@ pub enum SearchKategorien {
     Name,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum BJSUrkunde {
     Teilnehmer,
     Sieger,
@@ -18,7 +20,7 @@ pub enum BJSUrkunde {
     None
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum DOSBAbzeichen {
     Bronze,
     Silber,
@@ -39,13 +41,13 @@ pub struct SearchTerm {
     pub extensive: bool
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SingleResult {
     pub kategorie_id: i64,
     pub wert: f64
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SchuelerResult {
     pub id: i64,
     pub bjs_punkte: i64,
@@ -53,7 +55,7 @@ pub struct SchuelerResult {
     pub dosb_punkte: i64,
     pub dosb_abzeichen: DOSBAbzeichen,
 }
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct SchuelerResultExtensive {
     pub id: i64,
     pub bjs_punkte: i64,
