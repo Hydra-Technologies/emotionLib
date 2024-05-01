@@ -23,15 +23,14 @@ pub struct SchuelerResultConstructor {
 pub async fn search_database(db: &SqlitePool) -> Result<Vec<search_schema::SchuelerResult>, SearchError> {
     // first get all student Data from the database
     // here we get a list of the best trys of wich the medal is already calculated
-    let all_student_data = match sqlx::query_file!("src/search/selectVersucheOfStudents.sql").fetch_all(db).await {
+    let student_data = match sqlx::query_file!("src/search/selectVersucheOfStudents.sql").fetch_all(db).await {
         Ok(r) => r,
         Err(e) => return Err(SearchError::InternalError { message: "There was an error getting the schueler from the Database".to_string(), error: e.to_string() })
     };
-
     
     // this combines the list of trys into a list of schueler
     let mut schueler_map: HashMap<i64, SchuelerResultConstructor> = HashMap::new();
-    for versuch in all_student_data {
+    for versuch in student_data {
         match schueler_map.get(&versuch.schueler_id) {
             Some(r) => {
                 let mut kat_groups: Vec<i64>  = r.kat_groups.clone();
