@@ -10,7 +10,7 @@ use std::string::String;
 use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
 use log::{debug, info, warn};
 
-use self::schema::BjsKategorieConstructor;
+use self::schema::{BjsKategorieConstructor, DosbAlterBewertung, DosbKategorieConstructor};
 
 #[derive(Debug)]
 pub enum ManageError {
@@ -154,8 +154,9 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
             kat_group: kat.kat_group,
             digits_before: changes.digits_before.unwrap_or(kat.digits_before),
             digits_after: changes.digits_after.unwrap_or(kat.digits_after),
-            bjs: if changes.bjs.is_some() && kat.bjs.is_some() {
-                let bjs_change = changes.bjs.unwrap();
+            bjs: if changes.bjs.is_some() {
+            let bjs_change = changes.bjs.unwrap();
+            if kat.bjs.is_some() {
                 let bjs_kat = kat.bjs.unwrap();
                 Some(BjsKategorieConstructor {
                     a_m: bjs_kat.a_m,
@@ -163,20 +164,44 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
                     c_m: bjs_kat.c_m,
                     c_w: bjs_kat.c_w,
                     formel: bjs_kat.formel,
-
-                    altersklassen_m: bjs_change.altersklassen_m.into_iter()
-                    .map(|c| if bjs_kat.altersklassen_m.into_iter().any(|a| a == c) { Some(c) } else { None })
-                    .filter(|s| s.is_some())
-                    .map(|s| s.unwrap()).collect(),
-
-                    altersklassen_w: bjs_change.altersklassen_w.into_iter()
-                    .map(|c| if bjs_kat.altersklassen_w.into_iter().any(|a| a == c) { Some(c) } else { None })
-                    .filter(|s| s.is_some())
-                    .map(|s| s.unwrap()).collect()
+                    altersklassen_m: bjs_change.altersklassen_m,
+                    altersklassen_w: bjs_change.altersklassen_w
                })
-            } else { None },
+            } else {
+                Some(BjsKategorieConstructor {
+                    a_m: 0.0,
+                    a_w: 0.0,
+                    c_m: 0.0,
+                    c_w: 0.0,
+                    formel: "".to_string(),
+                    altersklassen_m: bjs_change.altersklassen_m,
+                    altersklassen_w: bjs_change.altersklassen_w
+               })  
+            }} else { kat.bjs },
 
-            dosb: if changes.dosb.is_some() { changes.dosb } else if vorlage.dosb.unwrap_or(false) { kat.dosb } else { None }
+            dosb: if let Some(change_dosb) = changes.dosb {
+                if let Some(kat_dosb) = kat.dosb {
+                    Some(DosbKategorieConstructor {
+                        altersklassen_m: change_dosb.altersklassen_m.into_iter()
+                        .map(|a| if let Some(age_group) = kat_dosb.altersklassen_m.iter().find(|ka| ka.alter == a) {
+                            DosbAlterBewertung { alter: a, bronze: age_group.bronze, silber: age_group.silber, gold: age_group.gold }
+                        } else {
+                            DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}
+                        }).collect(),
+                        altersklassen_w: change_dosb.altersklassen_w.into_iter()
+                        .map(|a| if let Some(age_group) = kat_dosb.altersklassen_w.iter().find(|ka| ka.alter == a) {
+                            DosbAlterBewertung { alter: a, bronze: age_group.bronze, silber: age_group.silber, gold: age_group.gold }
+                        } else {
+                            DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}
+                        }).collect(),
+                    })
+                } else {
+                    Some(DosbKategorieConstructor { 
+                        altersklassen_m: change_dosb.altersklassen_m.into_iter().map(|a| DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}).collect(), 
+                        altersklassen_w: change_dosb.altersklassen_w.into_iter().map(|a| DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}).collect()
+                    })
+                }
+            } else if vorlage.dosb.unwrap_or(false) { kat.dosb } else { None }
         }
     } else {
         schema::Kategorie {
