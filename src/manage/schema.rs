@@ -32,6 +32,13 @@ pub struct DosbKategorieConstructor {
     pub altersklassen_m: Vec<DosbAlterBewertung>,
     pub altersklassen_w: Vec<DosbAlterBewertung>
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AltersklassenConstructor {
+    pub altersklassen_m: Vec<i8>,
+    pub altersklassen_w: Vec<i8>
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Kategorie {
     pub name: String,
@@ -45,12 +52,10 @@ pub struct Kategorie {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KategorieChanges {
     pub name: Option<String>,
-    pub einheit: Option<String>,
-    pub kat_group: Option<i8>,
     pub digits_before: Option<i8>,
     pub digits_after: Option<i8>,
-    pub bjs: Option<BjsKategorieConstructor>,
-    pub dosb: Option<DosbKategorieConstructor>
+    pub bjs: Option<AltersklassenConstructor>, // IMPORTANT I use dosb because a and c should not be changed
+    pub dosb: Option<AltersklassenConstructor>
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -10,6 +10,8 @@ use std::string::String;
 use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
 use log::{debug, info, warn};
 
+use self::schema::BjsKategorieConstructor;
+
 #[derive(Debug)]
 pub enum ManageError {
     Internal { message: String },
@@ -148,11 +150,32 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
         let changes = vorlage.changes.unwrap();
         schema::Kategorie {
             name: changes.name.unwrap_or(kat.name),
-            einheit: changes.einheit.unwrap_or(kat.einheit),
-            kat_group: changes.kat_group.unwrap_or(kat.kat_group),
+            einheit: kat.einheit,
+            kat_group: kat.kat_group,
             digits_before: changes.digits_before.unwrap_or(kat.digits_before),
             digits_after: changes.digits_after.unwrap_or(kat.digits_after),
-            bjs: if changes.bjs.is_some() { changes.bjs } else if vorlage.bjs.unwrap_or(false) { kat.bjs } else { None },
+            bjs: if changes.bjs.is_some() && kat.bjs.is_some() {
+                let bjs_change = changes.bjs.unwrap();
+                let bjs_kat = kat.bjs.unwrap();
+                Some(BjsKategorieConstructor {
+                    a_m: bjs_kat.a_m,
+                    a_w: bjs_kat.a_w,
+                    c_m: bjs_kat.c_m,
+                    c_w: bjs_kat.c_w,
+                    formel: bjs_kat.formel,
+
+                    altersklassen_m: bjs_change.altersklassen_m.into_iter()
+                    .map(|c| if bjs_kat.altersklassen_m.into_iter().any(|a| a == c) { Some(c) } else { None })
+                    .filter(|s| s.is_some())
+                    .map(|s| s.unwrap()).collect(),
+
+                    altersklassen_w: bjs_change.altersklassen_w.into_iter()
+                    .map(|c| if bjs_kat.altersklassen_w.into_iter().any(|a| a == c) { Some(c) } else { None })
+                    .filter(|s| s.is_some())
+                    .map(|s| s.unwrap()).collect()
+               })
+            } else { None },
+
             dosb: if changes.dosb.is_some() { changes.dosb } else if vorlage.dosb.unwrap_or(false) { kat.dosb } else { None }
         }
     } else {
