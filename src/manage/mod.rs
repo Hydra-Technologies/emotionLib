@@ -48,7 +48,7 @@ pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema
     if data.bjs_bewertung.is_some() {
         insert_bjs_bewertungen(&con, data.bjs_bewertung.unwrap()).await?;
     } else {
-        let path = [vorlagen_dir.clone(), data.vorlage.unwrap().to_string(), "/init.json".to_string()].join("");
+        let path = [vorlagen_dir.clone(), data.vorlage.to_string(), "/init.json".to_string()].join("");
         let reader = std::io::BufReader::new(File::open(path).unwrap());
         let bjs: EventConstructor = serde_json::from_reader(reader).unwrap();
 
@@ -57,15 +57,10 @@ pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema
 
     if data.kategorien.is_some() {
         for kat in data.kategorien.unwrap() {
-            match kat {
+            let _ = match kat {
                 schema::ConstructKategorie::Kategorie(k) => insert_kat_in_db(&con, k).await,
-                schema::ConstructKategorie::Vorlage(v) =>  {
-                    match data.vorlage {
-                        Some(y) => insert_kat_in_db(&con, get_kat_from_vorlage(vorlagen_dir.clone(), y, v)?).await,
-                        None => return Err(ManageError::BadReque { message: "No Vorlage specified".to_string() })
-                    }
-                }
-            }?
+                schema::ConstructKategorie::Vorlage(v) => insert_kat_in_db(&con, get_kat_from_vorlage(vorlagen_dir.clone(), data.vorlage, v)?).await
+            };
         }
     }
 

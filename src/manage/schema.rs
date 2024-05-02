@@ -87,7 +87,7 @@ pub enum ConstructKategorie {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventConstructor {
     pub name: String,
-    pub vorlage: Option<i32>, // Here the Year from wich the vorlage should be used is spezified, if none is given the newest is used
+    pub vorlage: i32, // Here the Year from wich the vorlage should be used is spezified, if none is given the newest is used
     pub bjs_bewertung: Option<Vec<BjsAlterBewertung>>,
     pub kategorien: Option<Vec<ConstructKategorie>>
 }
