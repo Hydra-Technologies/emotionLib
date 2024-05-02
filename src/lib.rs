@@ -159,37 +159,22 @@ pub mod interact {
     ) -> Result<schema::NormVersuch, i32> {
         let all_versuche_result = sqlx::query_as!(model::NormVersuch, r#"
         SELECT * FROM (
-        SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, MAX(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch WHERE versuch.isReal GROUP BY kategorie_id
-        UNION
-        SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, MIN(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch WHERE versuch.isReal GROUP BY kategorie_id
+        SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MIN(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprint and Ausdauer
+            INNER JOIN kategorien ON kategorieId = kategorien.id
+            WHERE kategorien.kateGroupId IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupId
+        UNION 
+        SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MAX(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprung and Wurf/Stoß
+            INNER JOIN kategorien ON kategorieId = kategorien.id
+            WHERE kategorien.kateGroupId IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupId
         ) WHERE schueler_id = ? AND kategorie_id = ?
-        "#, id, kat_id).fetch_all(db).await;
+        "#, id, kat_id).fetch_one(db).await;
 
         let all_versuche_model = match all_versuche_result {
             Ok(r) => r,
             Err(_e) => return Err(500),
         };
 
-        let all_versuche = futures::future::join_all(
-            all_versuche_model
-                .into_iter()
-                .map(|v| calc_norm_versuch(v, db)),
-        )
-        .await;
-        if all_versuche.is_empty() {
-            return Err(-1);
-        }
-
-        let mut best_try = match all_versuche.get(0) {
-            Some(v) => v.to_owned(),
-            None => return Err(-1),
-        };
-        for v in all_versuche.to_owned() {
-            if v.punkte > best_try.punkte {
-                best_try = v;
-            }
-        }
-        Ok(best_try)
+        Ok(calc_norm_versuch(all_versuche_model, db).await)
     }
 
     pub async fn get_top_versuch_in_bjs(
@@ -427,10 +412,9 @@ pub mod interact {
 
     pub async fn calc_points(versuch: schema::SimpleVersuch, db: &SqlitePool) -> i32 {
         // get kategorie for calc point
-        let kat_result = sqlx::query_as!(
-            model::FormelKategorie,
+        let kat_result = sqlx::query!(
             r#"
-            SELECT name, a, c, lauf FROM schueler
+            SELECT name, a, c, kateGroupId as group_id FROM schueler
                 INNER JOIN formVars ON formVars.gesch = schueler.gesch
                 INNER JOIN kategorien ON formVars.katId = kategorien.id
             WHERE kategorien.id = ? and schueler.id = ?
@@ -450,7 +434,8 @@ pub mod interact {
         let c = kat.c.unwrap();
         let name = kat.name.unwrap();
 
-        let points = if kat.lauf.unwrap() {
+        let group_id = kat.group_id.unwrap();
+        let points = if group_id == 1 || group_id == 4 {
             // get distance
             let name_vec: Vec<&str> = name.split("m").collect();
             let distance = match name_vec[0].to_string().parse::<i32>() {
@@ -544,6 +529,7 @@ pub mod interact {
     fn check_schueler_id(id: &i32) -> bool {
         return id < &9999 && id > &1000;
     }
+
 }
 
 #[cfg(test)]

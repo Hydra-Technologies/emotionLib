@@ -7,6 +7,7 @@ pub struct SimpleSchueler {
     pub last_name: Option<String>,
 }
 
+
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct PflichtKategorie {
     pub id: Option<i64>,
