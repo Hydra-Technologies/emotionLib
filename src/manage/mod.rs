@@ -21,7 +21,7 @@ pub enum ManageError {
 }
 
 pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema::EventConstructor) -> Result<(), ManageError> {
-    let db_url = [school_dir, data.name.clone(), ".db".to_string()].join("");
+    let db_url = [school_dir, data.name.clone()].join("");
     // check if database exists
     if Sqlite::database_exists(db_url.as_str()).await.unwrap_or(true) {
         return Err(ManageError::Conflict { message: "Event Alread exists (or error)".to_string() });
