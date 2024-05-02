@@ -65,6 +65,19 @@ pub struct KategorieVorlage {
     pub id: i32,
     pub changes: Option<KategorieChanges>
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OutsideKategorie {
+    pub id: i8,
+    pub name: String,
+    pub einheit: String,
+    pub kat_group: i8,
+    pub digits_before: i8,
+    pub digits_after: i8,
+    pub bjs: Option<BjsKategorieConstructor>,
+    pub dosb: Option<DosbKategorieConstructor>
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum ConstructKategorie {
     Vorlage(KategorieVorlage),

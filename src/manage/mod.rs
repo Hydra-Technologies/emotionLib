@@ -89,14 +89,23 @@ pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
     return vorlagen;
 }
 
-pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::Kategorie>, ManageError> {
-    let mut kat_list: Vec<schema::Kategorie> = vec![];
+pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::OutsideKategorie>, ManageError> {
+    let mut kat_list: Vec<schema::OutsideKategorie> = vec![];
     for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
         if let Ok(entry) = entry_result {
             debug!("Path: {:?}", entry.path());
             if entry.file_name() != "init.json" {
-                if let Ok(k) = serde_json::from_reader(File::open(entry.path()).unwrap()) {
-                    kat_list.push(k);
+                if let Ok(k) = serde_json::from_reader::<File, schema::Kategorie>(File::open(entry.path()).unwrap()) {
+                    kat_list.push(schema::OutsideKategorie {
+                        id: entry.file_name().to_string_lossy().split(".").into_iter().find(|e| e.to_string().parse::<i8>().is_ok()).unwrap().to_string().parse().unwrap(),
+                        name: k.name,
+                        einheit: k.einheit,
+                        kat_group: k.kat_group,
+                        digits_before: k.digits_before,
+                        digits_after: k.digits_after,
+                        bjs: k.bjs,
+                        dosb: k.dosb
+                    });
                 }
             }
         }
