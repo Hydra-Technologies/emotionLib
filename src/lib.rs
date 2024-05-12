@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use sqlx::sqlite::SqlitePool;
 pub mod manage;
 mod model;
