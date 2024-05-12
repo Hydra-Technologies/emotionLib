@@ -1,17 +1,24 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SimpleSchueler {
     pub id: i64,
     pub first_name: String,
-    pub last_name: String
+    pub last_name: String,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SimpleVersuch {
-    pub schueler_id : i32,
+    pub schueler_id: i32,
     pub wert: f32,
     pub kategorie_id: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UploadSchueler {
+    pub id: i64,
+    pub gesch: char,
+    pub age: i8,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -29,7 +36,7 @@ pub struct NormVersuch {
 pub struct PflichtKategorie {
     pub id: i64,
     pub done: bool,
-    pub group_id: i64
+    pub group_id: i64,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
