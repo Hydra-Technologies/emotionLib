@@ -14,6 +14,7 @@ impl EmotionCon {
     }*/
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct UploadSchuelerResult {
     pub valid: Vec<schema::UploadSchueler>,
     pub age_invalid: Vec<schema::UploadSchueler>,
