@@ -21,11 +21,6 @@ pub struct UploadSchuelerResult {
     pub id_invalid: Vec<schema::UploadSchueler>,
     pub id_conflict: Vec<schema::UploadSchueler>,
 }
-impl Clone for UploadSchuelerResult {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
 
 pub mod interact {
     use crate::model;
@@ -592,7 +587,6 @@ pub mod interact {
     fn check_schueler_id(id: &i32) -> bool {
         return id < &9999 && id > &1000;
     }
-
 }
 
 #[cfg(test)]
