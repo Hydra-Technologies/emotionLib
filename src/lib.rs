@@ -55,11 +55,11 @@ pub mod interact {
                 };
                 let first_name = match schueler.first_name {
                     Some(f) => f,
-                    None => return Err(406),
+                    None => "".to_string(),
                 };
                 let last_name = match schueler.last_name {
                     Some(l) => l,
-                    None => return Err(406),
+                    None => "".to_string(),
                 };
                 return Ok(schema::SimpleSchueler {
                     id,
