@@ -1,7 +1,7 @@
 use sqlx::sqlite::SqlitePool;
+pub mod manage;
 mod model;
 pub mod schema;
-pub mod manage;
 pub mod search;
 
 // not_now_TODO write class with all the Functions (but not today)
@@ -14,9 +14,23 @@ impl EmotionCon {
     }*/
 }
 
+pub struct UploadSchuelerResult {
+    pub valid: Vec<schema::UploadSchueler>,
+    pub age_invalid: Vec<schema::UploadSchueler>,
+    pub gesch_invalid: Vec<schema::UploadSchueler>,
+    pub id_invalid: Vec<schema::UploadSchueler>,
+    pub id_conflict: Vec<schema::UploadSchueler>,
+}
+impl Clone for UploadSchuelerResult {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 pub mod interact {
     use crate::model;
     use crate::schema;
+    use crate::UploadSchuelerResult;
     use sqlx::SqlitePool;
     use std::string::String;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -132,6 +146,55 @@ pub mod interact {
         };
     }
 
+    pub async fn upload_schueler(
+        schueler_list: Vec<schema::UploadSchueler>,
+        db: &SqlitePool,
+    ) -> UploadSchuelerResult {
+        let mut result = UploadSchuelerResult {
+            valid: vec![],
+            age_invalid: vec![],
+            gesch_invalid: vec![],
+            id_invalid: vec![],
+            id_conflict: vec![],
+        };
+
+        // check if the age is resonable
+
+        for schueler in schueler_list.into_iter() {
+            if !(5..20).contains(&schueler.age) {
+                result.age_invalid.push(schueler);
+                continue;
+            }
+
+            if !(1000..9999).contains(&schueler.id) {
+                result.id_invalid.push(schueler);
+                continue;
+            }
+
+            if !['m', 'w'].contains(&schueler.gesch) {
+                result.gesch_invalid.push(schueler);
+                continue;
+            }
+
+            let id = schueler.id.clone();
+            let gesch = schueler.gesch.clone().to_string();
+            let age = schueler.age.clone();
+
+            match sqlx::query!(
+                "INSERT INTO schueler(id, gesch, age) VALUES (?,?,?)",
+                id,
+                gesch,
+                age,
+            )
+            .execute(db)
+            .await
+            {
+                Ok(_) => result.valid.push(schueler),
+                Err(_) => result.id_conflict.push(schueler),
+            }
+        }
+        return result;
+    }
     pub async fn get_all_versuch_for_kat(
         id: i32,
         kat_id: i32,
