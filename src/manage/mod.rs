@@ -1,14 +1,14 @@
 pub mod schema;
 
+use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie};
+use log::{debug, info, warn};
+use sqlx::migrate::MigrateDatabase;
+use sqlx::{Sqlite, SqlitePool};
 use std::fs;
 use std::fs::File;
 use std::path::Path;
-use sqlx::{Sqlite, SqlitePool};
-use sqlx::migrate::MigrateDatabase;
-use walkdir;
 use std::string::String;
-use crate::manage::schema::{BjsAlterBewertung, EventConstructor, Kategorie };
-use log::{debug, info, warn};
+use walkdir;
 
 use self::schema::{BjsKategorieConstructor, DosbAlterBewertung, DosbKategorieConstructor};
 
@@ -17,38 +17,57 @@ pub enum ManageError {
     Internal { message: String },
     Conflict { message: String },
     NotFound { message: String },
-    BadReque { message: String }
+    BadReque { message: String },
 }
 
-pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema::EventConstructor) -> Result<(), ManageError> {
-    let db_url = [school_dir, data.name.clone()].join("");
+pub async fn create_event(
+    school_dir: String,
+    vorlagen_dir: String,
+    data: schema::EventConstructor,
+) -> Result<(), ManageError> {
+    let db_url = [school_dir, data.name.clone(), ".db".to_string()].join("");
     // check if database exists
-    if Sqlite::database_exists(db_url.as_str()).await.unwrap_or(true) {
-        return Err(ManageError::Conflict { message: "Event Alread exists (or error)".to_string() });
+    if Sqlite::database_exists(db_url.as_str())
+        .await
+        .unwrap_or(true)
+    {
+        return Err(ManageError::Conflict {
+            message: "Event Alread exists (or error)".to_string(),
+        });
     }
     info!("checked if db exists ");
 
     // create Database
     match Sqlite::create_database(db_url.as_str()).await {
-        Err(e) =>  {
-            info!("{}",e.to_string());
-            return Err(ManageError::Internal { message: ["Something went wrong while creating Table".to_string(), e.to_string()].join("") })},
-        Ok(_) => ()
+        Err(e) => {
+            info!("{}", e.to_string());
+            return Err(ManageError::Internal {
+                message: [
+                    "Something went wrong while creating Table".to_string(),
+                    e.to_string(),
+                ]
+                .join(""),
+            });
+        }
+        Ok(_) => (),
     };
     info!("created DB");
 
     let con = SqlitePool::connect(db_url.as_str()).await.unwrap();
 
     // write the database schema to the file
-    sqlx::migrate!("./migrations")
-        .run(&con)
-        .await.unwrap();
+    sqlx::migrate!("./migrations").run(&con).await.unwrap();
 
     info!("migrated DB");
     if data.bjs_bewertung.is_some() {
         insert_bjs_bewertungen(&con, data.bjs_bewertung.unwrap()).await?;
     } else {
-        let path = [vorlagen_dir.clone(), data.vorlage.to_string(), "/init.json".to_string()].join("");
+        let path = [
+            vorlagen_dir.clone(),
+            data.vorlage.to_string(),
+            "/init.json".to_string(),
+        ]
+        .join("");
         let reader = std::io::BufReader::new(File::open(path).unwrap());
         let bjs: EventConstructor = serde_json::from_reader(reader).unwrap();
 
@@ -59,7 +78,13 @@ pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema
         for kat in data.kategorien.unwrap() {
             let _ = match kat {
                 schema::ConstructKategorie::Kategorie(k) => insert_kat_in_db(&con, k).await,
-                schema::ConstructKategorie::Vorlage(v) => insert_kat_in_db(&con, get_kat_from_vorlage(vorlagen_dir.clone(), data.vorlage, v)?).await
+                schema::ConstructKategorie::Vorlage(v) => {
+                    insert_kat_in_db(
+                        &con,
+                        get_kat_from_vorlage(vorlagen_dir.clone(), data.vorlage, v)?,
+                    )
+                    .await
+                }
             };
         }
     }
@@ -69,7 +94,7 @@ pub async fn create_event(school_dir: String, vorlagen_dir: String, data: schema
 
 pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
     let vorlagen_path = Path::new(&vorlagen_path);
-    let mut vorlagen= vec![];
+    let mut vorlagen = vec![];
     if vorlagen_path.is_dir() {
         for entry in fs::read_dir(vorlagen_path).unwrap() {
             let entry = entry.unwrap();
@@ -84,22 +109,37 @@ pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
     return vorlagen;
 }
 
-pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec<schema::OutsideKategorie>, ManageError> {
+pub fn get_kat_list_from_vorlage(
+    vorlagen_path: String,
+    year: i32,
+) -> Result<Vec<schema::OutsideKategorie>, ManageError> {
     let mut kat_list: Vec<schema::OutsideKategorie> = vec![];
     for entry_result in walkdir::WalkDir::new([vorlagen_path, year.to_string()].join("")) {
         if let Ok(entry) = entry_result {
             debug!("Path: {:?}", entry.path());
             if entry.file_name() != "init.json" {
-                if let Ok(k) = serde_json::from_reader::<File, schema::Kategorie>(File::open(entry.path()).unwrap()) {
+                if let Ok(k) = serde_json::from_reader::<File, schema::Kategorie>(
+                    File::open(entry.path()).unwrap(),
+                ) {
                     kat_list.push(schema::OutsideKategorie {
-                        id: entry.file_name().to_string_lossy().split(".").into_iter().find(|e| e.to_string().parse::<i8>().is_ok()).unwrap().to_string().parse().unwrap(),
+                        id: entry
+                            .file_name()
+                            .to_string_lossy()
+                            .split(".")
+                            .into_iter()
+                            .find(|e| e.to_string().parse::<i8>().is_ok())
+                            .unwrap()
+                            .to_string()
+                            .parse()
+                            .unwrap(),
                         name: k.name,
                         einheit: k.einheit,
                         kat_group: k.kat_group,
                         digits_before: k.digits_before,
                         digits_after: k.digits_after,
+                        versuche: k.versuche,
                         bjs: k.bjs,
-                        dosb: k.dosb
+                        dosb: k.dosb,
                     });
                 }
             }
@@ -108,7 +148,7 @@ pub fn get_kat_list_from_vorlage(vorlagen_path: String, year: i32) -> Result<Vec
     return Ok(kat_list);
 }
 
-pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
+pub fn check_vorlagen(vorlagen_dir: String) -> Result<(), String> {
     let vorlagen = walkdir::WalkDir::new(vorlagen_dir);
     for vorlage in vorlagen {
         if vorlage.is_ok() {
@@ -118,13 +158,25 @@ pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
                 let reader = std::io::BufReader::new(file);
                 if dir.file_name().eq("init.json") {
                     let _: schema::EventConstructor = match serde_json::from_reader(reader) {
-                        Err(e) => return Err(format!("Couldnt read init file {}: {}", dir.path().to_str().unwrap(), e.to_string())),
-                        Ok(r) => r
+                        Err(e) => {
+                            return Err(format!(
+                                "Couldnt read init file {}: {}",
+                                dir.path().to_str().unwrap(),
+                                e.to_string()
+                            ))
+                        }
+                        Ok(r) => r,
                     };
                 } else {
                     let _: schema::Kategorie = match serde_json::from_reader(reader) {
-                        Err(e) => return Err(format!("Couldnt read Kategorie file {}: {}", dir.path().to_str().unwrap(), e.to_string())),
-                        Ok(r) => r
+                        Err(e) => {
+                            return Err(format!(
+                                "Couldnt read Kategorie file {}: {}",
+                                dir.path().to_str().unwrap(),
+                                e.to_string()
+                            ))
+                        }
+                        Ok(r) => r,
                     };
                 }
             }
@@ -133,21 +185,39 @@ pub fn check_vorlagen(vorlagen_dir: String ) -> Result<(), String> {
     return Ok(());
 }
 
-pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::KategorieVorlage) -> Result<schema::Kategorie, ManageError> {
-    let path_string = [vorlagen_dir, year.to_string(), "/".to_string(), vorlage.id.to_string(), ".json".to_string()].join("");
+pub fn get_kat_from_vorlage(
+    vorlagen_dir: String,
+    year: i32,
+    vorlage: schema::KategorieVorlage,
+) -> Result<schema::Kategorie, ManageError> {
+    let path_string = [
+        vorlagen_dir,
+        year.to_string(),
+        "/".to_string(),
+        vorlage.id.to_string(),
+        ".json".to_string(),
+    ]
+    .join("");
 
     let path = Path::new(&path_string);
     let reader = match File::open(path) {
         Err(_) => {
-            let message = format!("Kategorie {} konnte nicht gefunden werden", path.to_str().unwrap());
+            let message = format!(
+                "Kategorie {} konnte nicht gefunden werden",
+                path.to_str().unwrap()
+            );
             return Err(ManageError::NotFound { message });
-        },
-        Ok(f) => std::io::BufReader::new(f)
+        }
+        Ok(f) => std::io::BufReader::new(f),
     };
 
-    let kat: Kategorie =  match serde_json::from_reader(reader) {
-        Err(_) => return Err(ManageError::Internal{ message: "Error while reading Kategorie".to_string()}),
-        Ok(r) => r
+    let kat: Kategorie = match serde_json::from_reader(reader) {
+        Err(_) => {
+            return Err(ManageError::Internal {
+                message: "Error while reading Kategorie".to_string(),
+            })
+        }
+        Ok(r) => r,
     };
 
     return Ok(if vorlage.changes.is_some() {
@@ -158,54 +228,116 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
             kat_group: kat.kat_group,
             digits_before: changes.digits_before.unwrap_or(kat.digits_before),
             digits_after: changes.digits_after.unwrap_or(kat.digits_after),
+            versuche: changes.versuche.unwrap_or(kat.versuche),
             bjs: if changes.bjs.is_some() {
-            let bjs_change = changes.bjs.unwrap();
-            if kat.bjs.is_some() {
-                let bjs_kat = kat.bjs.unwrap();
-                Some(BjsKategorieConstructor {
-                    a_m: bjs_kat.a_m,
-                    a_w: bjs_kat.a_w,
-                    c_m: bjs_kat.c_m,
-                    c_w: bjs_kat.c_w,
-                    formel: bjs_kat.formel,
-                    altersklassen_m: bjs_change.altersklassen_m,
-                    altersklassen_w: bjs_change.altersklassen_w
-               })
+                let bjs_change = changes.bjs.unwrap();
+                if kat.bjs.is_some() {
+                    let bjs_kat = kat.bjs.unwrap();
+                    Some(BjsKategorieConstructor {
+                        a_m: bjs_kat.a_m,
+                        a_w: bjs_kat.a_w,
+                        c_m: bjs_kat.c_m,
+                        c_w: bjs_kat.c_w,
+                        formel: bjs_kat.formel,
+                        versuche: kat.versuche,
+                        altersklassen_m: bjs_change.altersklassen_m,
+                        altersklassen_w: bjs_change.altersklassen_w,
+                    })
+                } else {
+                    Some(BjsKategorieConstructor {
+                        a_m: 0.0,
+                        a_w: 0.0,
+                        c_m: 0.0,
+                        c_w: 0.0,
+                        formel: "".to_string(),
+                        versuche: kat.versuche,
+                        altersklassen_m: bjs_change.altersklassen_m,
+                        altersklassen_w: bjs_change.altersklassen_w,
+                    })
+                }
             } else {
-                Some(BjsKategorieConstructor {
-                    a_m: 0.0,
-                    a_w: 0.0,
-                    c_m: 0.0,
-                    c_w: 0.0,
-                    formel: "".to_string(),
-                    altersklassen_m: bjs_change.altersklassen_m,
-                    altersklassen_w: bjs_change.altersklassen_w
-               })  
-            }} else { kat.bjs },
+                kat.bjs
+            },
 
             dosb: if let Some(change_dosb) = changes.dosb {
                 if let Some(kat_dosb) = kat.dosb {
                     Some(DosbKategorieConstructor {
-                        altersklassen_m: change_dosb.altersklassen_m.into_iter()
-                        .map(|a| if let Some(age_group) = kat_dosb.altersklassen_m.iter().find(|ka| ka.alter == a) {
-                            DosbAlterBewertung { alter: a, bronze: age_group.bronze, silber: age_group.silber, gold: age_group.gold }
-                        } else {
-                            DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}
-                        }).collect(),
-                        altersklassen_w: change_dosb.altersklassen_w.into_iter()
-                        .map(|a| if let Some(age_group) = kat_dosb.altersklassen_w.iter().find(|ka| ka.alter == a) {
-                            DosbAlterBewertung { alter: a, bronze: age_group.bronze, silber: age_group.silber, gold: age_group.gold }
-                        } else {
-                            DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}
-                        }).collect(),
+                        altersklassen_m: change_dosb
+                            .altersklassen_m
+                            .into_iter()
+                            .map(|a| {
+                                if let Some(age_group) =
+                                    kat_dosb.altersklassen_m.iter().find(|ka| ka.alter == a)
+                                {
+                                    DosbAlterBewertung {
+                                        alter: a,
+                                        bronze: age_group.bronze,
+                                        silber: age_group.silber,
+                                        gold: age_group.gold,
+                                    }
+                                } else {
+                                    DosbAlterBewertung {
+                                        alter: a,
+                                        bronze: 0.0,
+                                        silber: 0.0,
+                                        gold: 0.0,
+                                    }
+                                }
+                            })
+                            .collect(),
+                        altersklassen_w: change_dosb
+                            .altersklassen_w
+                            .into_iter()
+                            .map(|a| {
+                                if let Some(age_group) =
+                                    kat_dosb.altersklassen_w.iter().find(|ka| ka.alter == a)
+                                {
+                                    DosbAlterBewertung {
+                                        alter: a,
+                                        bronze: age_group.bronze,
+                                        silber: age_group.silber,
+                                        gold: age_group.gold,
+                                    }
+                                } else {
+                                    DosbAlterBewertung {
+                                        alter: a,
+                                        bronze: 0.0,
+                                        silber: 0.0,
+                                        gold: 0.0,
+                                    }
+                                }
+                            })
+                            .collect(),
                     })
                 } else {
-                    Some(DosbKategorieConstructor { 
-                        altersklassen_m: change_dosb.altersklassen_m.into_iter().map(|a| DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}).collect(), 
-                        altersklassen_w: change_dosb.altersklassen_w.into_iter().map(|a| DosbAlterBewertung { alter: a, bronze: 0.0, silber: 0.0, gold: 0.0}).collect()
+                    Some(DosbKategorieConstructor {
+                        altersklassen_m: change_dosb
+                            .altersklassen_m
+                            .into_iter()
+                            .map(|a| DosbAlterBewertung {
+                                alter: a,
+                                bronze: 0.0,
+                                silber: 0.0,
+                                gold: 0.0,
+                            })
+                            .collect(),
+                        altersklassen_w: change_dosb
+                            .altersklassen_w
+                            .into_iter()
+                            .map(|a| DosbAlterBewertung {
+                                alter: a,
+                                bronze: 0.0,
+                                silber: 0.0,
+                                gold: 0.0,
+                            })
+                            .collect(),
                     })
                 }
-            } else if vorlage.dosb.unwrap_or(false) { kat.dosb } else { None }
+            } else if vorlage.dosb.unwrap_or(false) {
+                kat.dosb
+            } else {
+                None
+            },
         }
     } else {
         schema::Kategorie {
@@ -214,33 +346,62 @@ pub fn get_kat_from_vorlage(vorlagen_dir: String, year: i32, vorlage: schema::Ka
             kat_group: kat.kat_group,
             digits_before: kat.digits_before,
             digits_after: kat.digits_after,
-            bjs: if vorlage.bjs.unwrap_or(false) { kat.bjs } else { None },
-            dosb: if vorlage.dosb.unwrap_or(false) { kat.dosb } else { None },
+            versuche: kat.versuche,
+            bjs: if vorlage.bjs.unwrap_or(false) {
+                kat.bjs
+            } else {
+                None
+            },
+            dosb: if vorlage.dosb.unwrap_or(false) {
+                kat.dosb
+            } else {
+                None
+            },
         }
     });
 }
 
-pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<schema::Kategorie>, ManageError> {
+pub fn get_kat_by_vorlage(
+    vorlagen_path: String,
+    vorlage: i64,
+) -> Result<Vec<schema::Kategorie>, ManageError> {
     let files = match fs::read_dir([vorlagen_path, vorlage.to_string(), "/".to_string()].join("")) {
         Ok(p) => p,
-        Err(_) => return Err(ManageError::Internal{ message: "Vorlagen Dir not found".to_string()})
+        Err(_) => {
+            return Err(ManageError::Internal {
+                message: "Vorlagen Dir not found".to_string(),
+            })
+        }
     };
 
     let mut kategorien: Vec<schema::Kategorie> = vec![];
     for file in files {
         match file.unwrap() {
             f => {
-                let name_vec: Vec<String> = f.file_name().to_str().unwrap().split(".").map(|s| s.to_string()).collect();
+                let name_vec: Vec<String> = f
+                    .file_name()
+                    .to_str()
+                    .unwrap()
+                    .split(".")
+                    .map(|s| s.to_string())
+                    .collect();
                 let id = name_vec[0].parse::<i32>();
                 if id.is_ok() {
                     if let Ok(reader) = File::open(f.path()) {
                         let kat: schema::Kategorie = match serde_json::from_reader(reader) {
                             Ok(k) => k,
-                            Err(_) => return Err(ManageError::Internal{ message: "Id nicht gefunden".to_string() })
+                            Err(_) => {
+                                return Err(ManageError::Internal {
+                                    message: "Id nicht gefunden".to_string(),
+                                })
+                            }
                         };
                         kategorien.push(kat);
                     } else {
-                        warn!("Couldnt read File: {}", f.path().to_str().unwrap_or("Couldnt unwrap Path"));
+                        warn!(
+                            "Couldnt read File: {}",
+                            f.path().to_str().unwrap_or("Couldnt unwrap Path")
+                        );
                     };
                 }
             }
@@ -249,21 +410,35 @@ pub fn get_kat_by_vorlage(vorlagen_path: String, vorlage: i64) -> Result<Vec<sch
     return Ok(kategorien);
 }
 
-
-async fn insert_bjs_bewertungen(db: &SqlitePool, bjs_alter_bewertungen: Vec<BjsAlterBewertung>) -> Result<(), ManageError> {
+async fn insert_bjs_bewertungen(
+    db: &SqlitePool,
+    bjs_alter_bewertungen: Vec<BjsAlterBewertung>,
+) -> Result<(), ManageError> {
     for bew in bjs_alter_bewertungen {
         let gesch_str = bew.gesch.to_string();
-        if sqlx::query!("INSERT INTO ageGroups(age,gesch, gold, silber) VALUES (?,?,?,?)", bew.alter, gesch_str , bew.ehren, bew.sieger).execute(db).await.is_err() {
-            return Err(ManageError::Internal{ message: "Error while inserting bjs bewertungen".to_string() });
+        if sqlx::query!(
+            "INSERT INTO ageGroups(age,gesch, gold, silber) VALUES (?,?,?,?)",
+            bew.alter,
+            gesch_str,
+            bew.ehren,
+            bew.sieger
+        )
+        .execute(db)
+        .await
+        .is_err()
+        {
+            return Err(ManageError::Internal {
+                message: "Error while inserting bjs bewertungen".to_string(),
+            });
         }
     }
     Ok(())
 }
 
-async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), ManageError>{
+async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), ManageError> {
     let lauf = kat.kat_group == 1 || kat.kat_group == 4;
-    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, digits_before, digits_after, kateGroupId) VALUES (?,?,?,3,?,?,?)",
-        kat.name, kat.einheit, lauf, kat.digits_before, kat.digits_after, kat.kat_group).execute(db).await {
+    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, digits_before, digits_after, kateGroupId) VALUES (?,?,?,?,?,?,?)",
+        kat.name, kat.einheit, lauf, kat.versuche, kat.digits_before, kat.digits_after, kat.kat_group).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
         Err(_e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
     };
@@ -275,28 +450,68 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
         let bjs = kat.bjs.unwrap();
 
         // the a and c numbers
-        if sqlx::query!("INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'w',?,?)", id, bjs.a_w, bjs.c_w).execute(db).await.is_err() {
-            return Err(ManageError::Internal{ message: "Error while inserting w a and c".to_string() });
+        if sqlx::query!(
+            "INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'w',?,?)",
+            id,
+            bjs.a_w,
+            bjs.c_w
+        )
+        .execute(db)
+        .await
+        .is_err()
+        {
+            return Err(ManageError::Internal {
+                message: "Error while inserting w a and c".to_string(),
+            });
         }
-        if sqlx::query!("INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'m',?,?)", id, bjs.a_m, bjs.c_m).execute(db).await.is_err() {
-            return Err(ManageError::Internal{ message: "Error while inserting m a and c".to_string()});
+        if sqlx::query!(
+            "INSERT INTO formVars(katId, gesch, a, c) VALUES (?,'m',?,?)",
+            id,
+            bjs.a_m,
+            bjs.c_m
+        )
+        .execute(db)
+        .await
+        .is_err()
+        {
+            return Err(ManageError::Internal {
+                message: "Error while inserting m a and c".to_string(),
+            });
         }
 
         // the age groups
         for age in bjs.altersklassen_w {
-            match sqlx::query!("INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'w', ?)", id, age).execute(db).await {
+            match sqlx::query!(
+                "INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'w', ?)",
+                id,
+                age
+            )
+            .execute(db)
+            .await
+            {
                 Err(e) => {
                     info!("{}", e);
-                    return Err(ManageError::Internal { message: "Error while inserting w alterklassen ".to_string()});
-                },
-                Ok(_) => ()
+                    return Err(ManageError::Internal {
+                        message: "Error while inserting w alterklassen ".to_string(),
+                    });
+                }
+                Ok(_) => (),
             }
         }
 
-
         for age in bjs.altersklassen_m {
-            if sqlx::query!("INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'm', ?)", id, age).execute(db).await.is_err() {
-                return Err(ManageError::Internal { message: "Error while inserting m alterklassen".to_string()});
+            if sqlx::query!(
+                "INSERT INTO bjsKat(katId, gesch, age) VALUES (?, 'm', ?)",
+                id,
+                age
+            )
+            .execute(db)
+            .await
+            .is_err()
+            {
+                return Err(ManageError::Internal {
+                    message: "Error while inserting m alterklassen".to_string(),
+                });
             }
         }
     }
@@ -326,9 +541,9 @@ async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(),
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use crate::manage::schema::KategorieVorlage;
     use super::*;
+    use crate::manage::schema::KategorieVorlage;
+    use std::fs;
     #[test]
     pub fn test_vorlagen() {
         check_vorlagen("vorlagen/".to_string()).unwrap();
@@ -336,7 +551,16 @@ mod tests {
 
     #[test]
     pub fn get_vorlage_2023_1() {
-        let _ = get_kat_from_vorlage("vorlagen/".to_string(), 2023, KategorieVorlage { bjs: Some(true), dosb: Some(true) , id: 1, changes: None });
+        let _ = get_kat_from_vorlage(
+            "vorlagen/".to_string(),
+            2023,
+            KategorieVorlage {
+                bjs: Some(true),
+                dosb: Some(true),
+                id: 1,
+                changes: None,
+            },
+        );
     }
 
     #[sqlx::test]
@@ -350,11 +574,13 @@ mod tests {
 
         let event: EventConstructor = serde_json::from_reader(reader).unwrap();
 
-        create_event("testData/".to_string(), "vorlagen/".to_string(), event).await.unwrap();
+        create_event("testData/".to_string(), "vorlagen/".to_string(), event)
+            .await
+            .unwrap();
 
         println!("Created Event: {:.2?}", now.elapsed());
     }
-    
+
     #[test]
     pub fn get_list_of_events() {
         let k_r = get_kat_list_from_vorlage("vorlagen/".to_string(), 2023);
