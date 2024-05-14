@@ -497,6 +497,7 @@ pub mod interact {
         let group_id = kat.group_id.unwrap();
         let points = if group_id == 1 || group_id == 4 {
             // get distance
+            // TODO: Get your distance from somewhere else this sucks
             let name_vec: Vec<&str> = name.split("m").collect();
             let distance = match name_vec[0].to_string().parse::<i32>() {
                 Ok(d) => d,
