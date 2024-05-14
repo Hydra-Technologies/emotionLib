@@ -22,7 +22,6 @@ pub struct BjsKategorieConstructor {
     pub c_w: f32,
     pub a_m: f32,
     pub c_m: f32,
-    pub versuche: u8,
     pub formel: String,
     pub altersklassen_m: Vec<i8>,
     pub altersklassen_w: Vec<i8>,

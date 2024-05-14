@@ -239,7 +239,6 @@ pub fn get_kat_from_vorlage(
                         c_m: bjs_kat.c_m,
                         c_w: bjs_kat.c_w,
                         formel: bjs_kat.formel,
-                        versuche: kat.versuche,
                         altersklassen_m: bjs_change.altersklassen_m,
                         altersklassen_w: bjs_change.altersklassen_w,
                     })
@@ -250,7 +249,6 @@ pub fn get_kat_from_vorlage(
                         c_m: 0.0,
                         c_w: 0.0,
                         formel: "".to_string(),
-                        versuche: kat.versuche,
                         altersklassen_m: bjs_change.altersklassen_m,
                         altersklassen_w: bjs_change.altersklassen_w,
                     })

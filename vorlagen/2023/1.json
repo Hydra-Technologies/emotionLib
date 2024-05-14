@@ -1,10 +1,10 @@
 {
-  "id": 1,
   "name": "50m Lauf",
   "einheit": "s",
   "kat_group": 1,
   "digits_before": 2,
   "digits_after": 2,
+  "versuche": 1,
   "bjs": {
     "a_w": 3.64800,
     "c_w": 0.00660,
