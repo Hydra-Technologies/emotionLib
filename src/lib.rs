@@ -191,7 +191,7 @@ pub mod interact {
                     continue;
                 }
             } else {
-                println("no age given");
+                println!("no age given");
                 result.age_invalid.push(schueler);
                 continue;
             }
