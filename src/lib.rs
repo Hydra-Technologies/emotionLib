@@ -28,6 +28,7 @@ pub mod interact {
     use crate::model;
     use crate::schema;
     use crate::UploadSchuelerResult;
+    use regex::Regex;
     use sqlx::SqlitePool;
     use std::string::String;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -158,7 +159,30 @@ pub mod interact {
         // check if the age is resonable
 
         for schueler in schueler_list.into_iter() {
-            if !(5..20).contains(&schueler.age) {
+            let mut age: i8 = 0;
+            if schueler.age.is_some() {
+                age = schueler.age.clone().unwrap();
+                if !(5..20).contains(&age) {
+                    result.age_invalid.push(schueler);
+                    continue;
+                }
+            } else if let Some(b_day_str) = schueler.bday.clone() {
+                let now = (SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    / 31536000) as u64
+                    + 1970;
+                let re = Regex::new("/(20|19)[0-9][0-9]/gm").unwrap();
+                let b_day = match re.find(b_day_str.as_str()) {
+                    Some(b) => b.as_str().parse::<u64>().unwrap(),
+                    None => {
+                        result.age_invalid.push(schueler);
+                        continue;
+                    }
+                };
+                age = (now - b_day) as i8;
+            } else {
                 result.age_invalid.push(schueler);
                 continue;
             }
@@ -175,7 +199,6 @@ pub mod interact {
 
             let id = schueler.id.clone();
             let gesch = schueler.gesch.clone().to_string();
-            let age = schueler.age.clone();
 
             match sqlx::query!(
                 "INSERT INTO schueler(id, gesch, age) VALUES (?,?,?)",

@@ -18,7 +18,8 @@ pub struct SimpleVersuch {
 pub struct UploadSchueler {
     pub id: i64,
     pub gesch: char,
-    pub age: i8,
+    pub age: Option<i8>,
+    pub bday: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
