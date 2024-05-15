@@ -176,7 +176,7 @@ pub mod interact {
                     / 31536000) as u64
                     + 1970;
                 println!("start regex");
-                let re = Regex::new("/(20|19)[0-9][0-9]/gm").unwrap();
+                let re = Regex::new("(20|19)[0-9][0-9]").unwrap();
                 let b_day = match re.find(b_day_str.as_str()) {
                     Some(b) => b.as_str().parse::<u64>().unwrap(),
                     None => {
