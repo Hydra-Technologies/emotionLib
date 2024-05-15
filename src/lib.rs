@@ -159,14 +159,15 @@ pub mod interact {
         // check if the age is resonable
 
         for schueler in schueler_list.into_iter() {
-            let mut age: i8 = 0;
-            if schueler.age.is_some() {
+            let age: i8;
+            if schueler.age.is_some() && schueler.age.clone().unwrap() != -1 {
                 age = schueler.age.clone().unwrap();
                 if !(5..20).contains(&age) {
                     result.age_invalid.push(schueler);
                     continue;
                 }
-            } else if let Some(b_day_str) = schueler.bday.clone() {
+            } else if schueler.bday.is_some() && schueler.bday.clone().unwrap() != "-1" {
+                let b_day_str = schueler.bday.clone().unwrap();
                 let now = (SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
                     .unwrap()
