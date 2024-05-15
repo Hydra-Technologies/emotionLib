@@ -183,6 +183,7 @@ pub mod interact {
                     }
                 };
                 age = (now - b_day) as i8;
+                println!("Age: {} - Now: {} - b_day: {}", age, now, b_day);
                 if !(5..20).contains(&age) {
                     result.age_invalid.push(schueler);
                     continue;
