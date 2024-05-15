@@ -167,7 +167,6 @@ pub mod interact {
                     continue;
                 }
             } else if schueler.bday.is_some() && schueler.bday.clone().unwrap() != "-1" {
-                println!("bday");
                 let b_day_str = schueler.bday.clone().unwrap();
                 let now = (SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
@@ -175,7 +174,6 @@ pub mod interact {
                     .as_secs()
                     / 31536000) as u64
                     + 1970;
-                println!("start regex");
                 let re = Regex::new("(20|19)[0-9][0-9]").unwrap();
                 let b_day = match re.find(b_day_str.as_str()) {
                     Some(b) => b.as_str().parse::<u64>().unwrap(),
@@ -185,13 +183,11 @@ pub mod interact {
                     }
                 };
                 age = (now - b_day) as i8;
-                println!("Age: {} - Now: {} - b_day: {}", age, now, b_day);
                 if !(5..20).contains(&age) {
                     result.age_invalid.push(schueler);
                     continue;
                 }
             } else {
-                println!("no age given");
                 result.age_invalid.push(schueler);
                 continue;
             }

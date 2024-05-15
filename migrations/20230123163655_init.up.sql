@@ -106,10 +106,10 @@ INSERT INTO ageGroups(age, gesch, silber, gold) VALUES
     (-1, 'm', 600, 775);
 
 
-INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('4321', 'Brian2', 'aka Jesus', '5A', 2025, 'm', true);
-INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('1234', 'Franz2', 'Peterson', '5A', 2025,  'w', false);
+-- INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('4321', 'Brian2', 'aka Jesus', '5A', 2025, 'm', true);
+-- INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('1234', 'Franz2', 'Peterson', '5A', 2025,  'w', false);
 
-UPDATE schueler SET age = strftime('%Y')-birth_year;
+-- UPDATE schueler SET age = strftime('%Y')-birth_year;
 
 /*
 INSERT INTO ageGroups(age, gesch, silber, gold) VALUES
