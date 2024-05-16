@@ -162,7 +162,7 @@ pub mod interact {
             let age: i8;
             if schueler.age.is_some() && schueler.age.clone().unwrap() != -1 {
                 age = schueler.age.clone().unwrap();
-                if !(5..20).contains(&age) {
+                if !(5..25).contains(&age) {
                     result.age_invalid.push(schueler);
                     continue;
                 }
@@ -183,7 +183,7 @@ pub mod interact {
                     }
                 };
                 age = (now - b_day) as i8;
-                if !(5..20).contains(&age) {
+                if !(5..25).contains(&age) {
                     result.age_invalid.push(schueler);
                     continue;
                 }
@@ -259,7 +259,7 @@ pub mod interact {
 
         let all_versuche_model = match all_versuche_result {
             Ok(r) => r,
-            Err(_e) => return Err(500),
+            Err(_e) => return Err(404),
         };
 
         Ok(calc_norm_versuch(all_versuche_model, db).await)
@@ -296,7 +296,32 @@ pub mod interact {
         }
         Ok(top_list)
     }
+    /*
+        pub async fn get_top_by_schueler(id: i32, db: &SqlitePool) {
+            let possible_schueler_kat = sqlx::query!(
+                "
+            SELECT DISTINCT katId as kat_id FROM schueler
+            INNER JOIN (
+                SELECT age, gesch, katId FROM bjsKat
+                UNION
+                SELECT age, gesch, katId FROM dosbKat
+            ) as kat ON kat.age = schueler.age  AND kat.gesch = schueler.gesch
+            WHERE schueler.id = ?;
+                ",
+                id
+            )
+            .fetch_all(db)
+            .await
+            .unwrap();
 
+            let all_results:  = futures::join!(possible_schueler_kat
+                .into_iter()
+                .map(|i| async {
+                    let vers = get_top_versuch_by_kat(id, i.kat_id.clone().unwrap() as i32, db).await;
+                })
+                .collect());
+        }
+    */
     pub async fn get_top_versuch_in_dosb(
         id: i32,
         db: &SqlitePool,
