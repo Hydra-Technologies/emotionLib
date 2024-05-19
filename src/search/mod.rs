@@ -1,4 +1,5 @@
 pub mod search_schema;
+use crate::schema::SimpleVersuch;
 use futures::future::join_all;
 use sha256::TrySha256Digest;
 use sqlx::SqlitePool;
@@ -40,13 +41,22 @@ pub async fn search_database(
     // this combines the list of trys into a list of schueler
     let mut schueler_map: HashMap<i64, SchuelerResultConstructor> = HashMap::new();
     for versuch in student_data {
+        let versuch_bjs_punkte = calc_points(
+            SimpleVersuch {
+                schueler_id: versuch.schueler_id.clone() as i32,
+                wert: versuch.wert.clone().unwrap() as f32,
+                kategorie_id: versuch.kategorie_id.clone() as i32,
+            },
+            db,
+        )
+        .await;
         match schueler_map.get(&versuch.schueler_id) {
             Some(r) => {
                 let mut kat_groups: Vec<i64> = r.kat_groups.clone();
                 let mut bjs_punkte: Vec<i64> = r.bjs_punkte.clone();
                 kat_groups.push(versuch.kat_group_id.unwrap());
-                if let Some(p) = versuch.bjs_punkte {
-                    bjs_punkte.push(p)
+                if versuch_bjs_punkte > 0 {
+                    bjs_punkte.push(versuch_bjs_punkte as i64);
                 }
 
                 schueler_map.insert(
@@ -60,13 +70,12 @@ pub async fn search_database(
                 );
             }
             None => {
-                println!("{:?}", versuch);
                 schueler_map.insert(
                     versuch.schueler_id,
                     SchuelerResultConstructor {
                         id: versuch.schueler_id,
-                        bjs_punkte: if versuch.bjs_punkte.is_some() {
-                            vec![versuch.bjs_punkte.unwrap()]
+                        bjs_punkte: if versuch_bjs_punkte > 0 {
+                            vec![versuch_bjs_punkte as i64]
                         } else {
                             vec![]
                         },
@@ -186,6 +195,62 @@ async fn result2extensive(
     };
 }
 
+// This is just a copy of function in lib.rs
+// I want to change the stucture so this is not nessesary anymore
+pub async fn calc_points(versuch: SimpleVersuch, db: &SqlitePool) -> i32 {
+    // get kategorie for calc point
+    let kat_result = sqlx::query!(
+        r#"
+            SELECT name, a, c, kateGroupId as group_id FROM schueler
+                INNER JOIN formVars ON formVars.gesch = schueler.gesch
+                INNER JOIN kategorien ON formVars.katId = kategorien.id
+            WHERE kategorien.id = ? and schueler.id = ?
+            "#,
+        versuch.kategorie_id,
+        versuch.schueler_id
+    )
+    .fetch_one(db)
+    .await;
+
+    let kat = match kat_result {
+        Ok(k) => k,
+        Err(_e) => return -404,
+    };
+
+    let a = kat.a.unwrap();
+    let c = kat.c.unwrap();
+    let name = kat.name.unwrap();
+
+    let group_id = kat.group_id.unwrap();
+    let points = if group_id == 1 || group_id == 4 {
+        // get distance
+        // TODO: Get your distance from somewhere else this sucks
+        let name_vec: Vec<&str> = name.split("m").collect();
+        let distance = match name_vec[0].to_string().parse::<i32>() {
+            Ok(d) => d,
+            Err(_e) => return -500,
+        };
+
+        // look up zuschlag
+        let zuschlag: f32 = if distance < 301 {
+            0.24
+        } else if distance < 401 {
+            0.14
+        } else {
+            0.0
+        };
+        (((distance as f32 / (versuch.wert + zuschlag)) - a as f32) / c as f32) as i32
+    } else {
+        ((versuch.wert.sqrt() - a as f32) / c as f32) as i32
+    };
+    if points < 0 {
+        return 0;
+    } else if points > 900 {
+        return -406;
+    }
+    return points;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,6 +259,7 @@ mod tests {
     #[sqlx::test]
     async fn search() {
         let db = SqlitePool::connect("db/emotion1.db").await.unwrap();
-        println!("Results: \n{:?}", search_database(&db).await);
+        let result = search_database_extesive(&db).await;
+        println!("{:#?}", result);
     }
 }

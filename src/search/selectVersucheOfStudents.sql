@@ -1,5 +1,5 @@
 -- calculate the dosb medal
-SELECT schuelerId as schueler_id, versuchId as versuch_id, versuch.kategorieId as kategorie_id, kategorien.kateGroupId as kat_group_id, versuch.punkte as bjs_punkte, 
+SELECT schuelerId as schueler_id, versuchId as versuch_id, versuch.kategorieId as kategorie_id, kategorien.kateGroupId as kat_group_id, versuch.punkte as bjs_punkte, versuch.wert as wert, 
     IIF(silber<gold, 
         IIF(versuch.wert < bronze-0.01, 0, IIF(versuch.wert < silber-0.01, 1, IIF(versuch.wert < gold-0.01, 2, 3))),
         IIF(versuch.wert > bronze+0.01, 0, IIF(versuch.wert > silber+0.01, 1, IIF(versuch.wert > gold+0.01, 2, 3)))

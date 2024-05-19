@@ -17,7 +17,7 @@ pub enum BJSUrkunde {
     Teilnehmer,
     Sieger,
     Ehren,
-    None
+    None,
 }
 
 #[derive(Debug, Serialize)]
@@ -25,12 +25,12 @@ pub enum DOSBAbzeichen {
     Bronze,
     Silber,
     Gold,
-    None
+    None,
 }
 
 pub struct Filter {
     pub bjs: Option<Vec<BJSUrkunde>>,
-    pub dosb: Option<Vec<DOSBAbzeichen>>
+    pub dosb: Option<Vec<DOSBAbzeichen>>,
 }
 
 pub struct SearchTerm {
@@ -38,13 +38,13 @@ pub struct SearchTerm {
     pub kat: Option<SearchKategorien>,
     pub filter: Option<Filter>,
     pub sort: Option<SortKategorien>,
-    pub extensive: bool
+    pub extensive: bool,
 }
 
 #[derive(Debug, Serialize)]
 pub struct SingleResult {
     pub kategorie_id: i64,
-    pub wert: f64
+    pub wert: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,5 +62,5 @@ pub struct SchuelerResultExtensive {
     pub bjs_urkunde: BJSUrkunde,
     pub dosb_punkte: i64,
     pub dosb_abzeichen: DOSBAbzeichen,
-    pub single_results: Vec<SingleResult>
+    pub single_results: Vec<SingleResult>,
 }
