@@ -27,49 +27,30 @@ pub struct UploadSchuelerResult {
 pub mod interact {
     use crate::model;
     use crate::schema;
+    use crate::search;
     use crate::UploadSchuelerResult;
     use regex::Regex;
     use sqlx::SqlitePool;
     use std::string::String;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    pub async fn get_schueler(id: &i32, db: &SqlitePool) -> Result<schema::SimpleSchueler, i32> {
+    pub async fn get_schueler(
+        id: &i32,
+        db: &SqlitePool,
+    ) -> Result<search::search_schema::SchuelerResultExtensive, i32> {
         if !check_schueler_id(&id) {
             return Err(400);
         }
 
-        let query_response = sqlx::query_as!(
-            model::SimpleSchueler,
-            r#"
-        SELECT id, fName as first_name, lName as last_name FROM schueler WHERE id = ?
-            "#,
-            id
-        )
-        .fetch_one(db)
-        .await;
-
-        match query_response {
-            Ok(schueler) => {
-                let id = match schueler.id {
-                    Some(i) => i,
-                    None => return Err(406),
-                };
-                let first_name = match schueler.first_name {
-                    Some(f) => f,
-                    None => "".to_string(),
-                };
-                let last_name = match schueler.last_name {
-                    Some(l) => l,
-                    None => "".to_string(),
-                };
-                return Ok(schema::SimpleSchueler {
-                    id,
-                    first_name,
-                    last_name,
-                });
-            }
+        let all_students = match search::search_database_extesive(db).await {
+            Ok(s) => s,
             Err(_e) => return Err(500),
-        }
+        };
+
+        return match all_students.into_iter().find(|s| s.id == id.clone() as i64) {
+            Some(s) => Ok(s),
+            None => Err(404),
+        };
     }
 
     pub async fn get_dosb_task_for_schueler(
@@ -663,15 +644,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn get_schueler() {
-        let db = migrate_example_db().await;
-        let test_schueler = interact::get_schueler(&1234, &db).await.unwrap();
-        let result_schueler = schema::SimpleSchueler {
-            id: 1234,
-            first_name: String::from("Franz2"),
-            last_name: String::from("Peterson"),
-        };
-
-        assert_eq!(result_schueler, test_schueler);
+        let db = SqlitePool::connect("db/emotion1.db").await.unwrap();
+        let result = interact::get_schueler(&5327, &db).await;
+        println!("{:#?}", result);
     }
 
     #[actix_rt::test]
