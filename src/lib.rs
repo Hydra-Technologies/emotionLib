@@ -622,7 +622,7 @@ pub mod interact {
     }
 
     fn check_schueler_id(id: &i32) -> bool {
-        return id < &9999 && id > &1000;
+        return id < &9999 && id >= &1000;
     }
 }
 
