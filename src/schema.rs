@@ -1,3 +1,4 @@
+use crate::search::search_schema::DOSBAbzeichen;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -29,6 +30,18 @@ pub struct NormVersuch {
     pub kategorie_id: i64,
     pub wert: f64,
     pub punkte: i64,
+    pub ts_recording: i64,
+    pub is_real: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct NormVersuchDosb {
+    pub id: i64,
+    pub schueler_id: i64,
+    pub kategorie_id: i64,
+    pub wert: f64,
+    pub punkte: i64,
+    pub dosb: DOSBAbzeichen,
     pub ts_recording: i64,
     pub is_real: bool,
 }

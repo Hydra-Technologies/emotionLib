@@ -130,7 +130,7 @@ pub async fn search_database(
                     search_schema::BJSUrkunde::None
                 },
                 dosb_punkte: c.dosb_punkte as i64,
-                dosb_abzeichen: if [1, 2, 3, 4].iter().all(|g| c.kat_groups.contains(g)) { search_schema::DOSBAbzeichen::None }
+                dosb_abzeichen: if !([1, 2, 3, 4].iter().all(|g| c.kat_groups.contains(g))) { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 8  { search_schema::DOSBAbzeichen::Bronze }
                     else if c.dosb_punkte < 11  { search_schema::DOSBAbzeichen::Silber }
                     else { search_schema::DOSBAbzeichen::Gold }

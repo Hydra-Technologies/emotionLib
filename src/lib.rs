@@ -306,7 +306,7 @@ pub mod interact {
     pub async fn get_top_versuch_in_dosb(
         id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::NormVersuch>, i32> {
+    ) -> Result<Vec<schema::NormVersuchDosb>, i32> {
         let kat_list_result = sqlx::query_as!(
             model::KatId,
             r#"
@@ -332,7 +332,31 @@ pub mod interact {
                 top_list.push(top.unwrap());
             }
         }
-        Ok(top_list)
+
+        let mut top_with_dosb: Vec<schema::NormVersuchDosb> = Vec::new();
+
+        for kat in top_list {
+            top_with_dosb.push(schema::NormVersuchDosb {
+                id: kat.id,
+                schueler_id: kat.schueler_id,
+                kategorie_id: kat.kategorie_id,
+                wert: kat.wert,
+                punkte: kat.punkte,
+                dosb: get_medal(
+                    schema::SimpleVersuch {
+                        schueler_id: kat.schueler_id as i32,
+                        wert: kat.wert as f32,
+                        kategorie_id: kat.kategorie_id as i32,
+                    },
+                    db,
+                )
+                .await,
+                ts_recording: kat.ts_recording,
+                is_real: kat.is_real,
+            })
+        }
+
+        Ok(top_with_dosb)
     }
 
     pub async fn get_bjs_kat_groups(id: i32, db: &SqlitePool) -> Vec<Vec<i32>> {
@@ -556,6 +580,47 @@ pub mod interact {
             return -406;
         }
         return points;
+    }
+
+    async fn get_medal(
+        versuch: schema::SimpleVersuch,
+        db: &SqlitePool,
+    ) -> search::search_schema::DOSBAbzeichen {
+        let change_values = match sqlx::query!(
+            "SELECT IFNULL(gold,0.0) as gold,IFNULL(silber,0.0) as silber ,IFNULL(bronze,0.0) as bronze FROM schueler
+            INNER JOIN dosbKat ON schueler.age = dosbKat.age AND schueler.gesch = dosbKat.gesch
+            WHERE schueler.id = ? AND dosbKat.katId = ?;",
+            versuch.schueler_id,
+            versuch.kategorie_id
+        )
+        .fetch_one(db)
+        .await
+        {
+            Ok(r) => r,
+            Err(_) => return search::search_schema::DOSBAbzeichen::None,
+        };
+
+        return if change_values.bronze < change_values.gold {
+            if change_values.gold - 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::Gold
+            } else if change_values.silber - 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::Silber
+            } else if change_values.bronze - 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::Bronze
+            } else {
+                search::search_schema::DOSBAbzeichen::None
+            }
+        } else {
+            if change_values.bronze + 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::None
+            } else if change_values.silber + 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::Bronze
+            } else if change_values.gold + 0.01 < versuch.wert as f64 {
+                search::search_schema::DOSBAbzeichen::Silber
+            } else {
+                search::search_schema::DOSBAbzeichen::Gold
+            }
+        };
     }
 
     async fn check_kategorie_id(id: &i32, db_con: &SqlitePool) -> bool {
