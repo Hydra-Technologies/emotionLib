@@ -230,11 +230,11 @@ pub mod interact {
         SELECT * FROM (
         SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MIN(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprint and Ausdauer
             INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupId IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupId
+            WHERE kategorien.kateGroupId IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
         UNION 
         SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MAX(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprung and Wurf/Stoß
             INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupId IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupId
+            WHERE kategorien.kateGroupId IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
         ) WHERE schueler_id = ? AND kategorie_id = ?
         "#, id, kat_id).fetch_one(db).await;
 

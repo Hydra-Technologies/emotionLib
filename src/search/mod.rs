@@ -251,6 +251,44 @@ pub async fn calc_points(versuch: SimpleVersuch, db: &SqlitePool) -> i32 {
     return points;
 }
 
+async fn get_medal(versuch: SimpleVersuch, db: &SqlitePool) -> search_schema::DOSBAbzeichen {
+    let change_values = match sqlx::query!(
+        "SELECT IFNULL(gold,0.0) as gold,IFNULL(silber,0.0) as silber ,IFNULL(bronze,0.0) as bronze FROM schueler
+        INNER JOIN dosbKat ON schueler.age = dosbKat.age AND schueler.gesch = dosbKat.gesch
+        WHERE schueler.id = ? AND dosbKat.katId = ?;",
+        versuch.schueler_id,
+        versuch.kategorie_id
+    )
+    .fetch_one(db)
+    .await
+    {
+        Ok(r) => r,
+        Err(_) => return search_schema::DOSBAbzeichen::None,
+    };
+
+    return if change_values.bronze < change_values.gold {
+        if change_values.gold - 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::Gold
+        } else if change_values.silber - 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::Silber
+        } else if change_values.bronze - 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::Bronze
+        } else {
+            search_schema::DOSBAbzeichen::None
+        }
+    } else {
+        if change_values.bronze + 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::None
+        } else if change_values.silber + 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::Bronze
+        } else if change_values.gold + 0.01 < versuch.wert as f64 {
+            search_schema::DOSBAbzeichen::Silber
+        } else {
+            search_schema::DOSBAbzeichen::Gold
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
