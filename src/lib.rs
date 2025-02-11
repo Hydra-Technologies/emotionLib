@@ -1065,4 +1065,25 @@ mod tests {
         assert!(!kat1.bjs);
         assert!(!kat1.dosb);
     }
+
+    #[sqlx::test]
+    async fn debuging_2024_12_year_not_right() {
+        let db = SqlitePool::connect("db/emotion24.db").await.unwrap();
+
+        // check if there are any medals
+        let dosb_best_trys = interact::get_top_versuch_in_dosb(5541, &db).await.unwrap();
+        let mut dosb_best_trys_medals = dosb_best_trys.into_iter().map(|x| x.dosb);
+        assert!(dosb_best_trys_medals.all(|x| -> bool { if let search::search_schema::DOSBAbzeichen::None = x {
+            true
+        } else {
+            false
+        }}));
+
+        // test if the right dosb kategorien will be returned 
+        // currently fails :(
+        let dosb_tasks = interact::get_dosb_task_for_schueler(5541, &db).await.unwrap();
+        let mut dosb_tasks_ids: Vec<i64> = dosb_tasks.into_iter().map(|x| -> i64 {x.id}).collect::<Vec<i64>>();
+        dosb_tasks_ids.sort();
+        assert_eq!(dosb_tasks_ids, vec![4, 6, 7, 8, 9, 10]);
+    }
 }

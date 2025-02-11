@@ -131,6 +131,7 @@ pub async fn search_database(
                 },
                 dosb_punkte: c.dosb_punkte as i64,
                 dosb_abzeichen: if !([1, 2, 3, 4].iter().all(|g| c.kat_groups.contains(g))) { search_schema::DOSBAbzeichen::None }
+                    else if c.dosb_punkte < 4 { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 8  { search_schema::DOSBAbzeichen::Bronze }
                     else if c.dosb_punkte < 11  { search_schema::DOSBAbzeichen::Silber }
                     else { search_schema::DOSBAbzeichen::Gold }
@@ -291,6 +292,8 @@ async fn get_medal(versuch: SimpleVersuch, db: &SqlitePool) -> search_schema::DO
 
 #[cfg(test)]
 mod tests {
+    use crate::search;
+
     use super::*;
     use sqlx::SqlitePool;
 
@@ -299,5 +302,55 @@ mod tests {
         let db = SqlitePool::connect("db/emotion1.db").await.unwrap();
         let result = search_database_extesive(&db).await;
         println!("{:#?}", result);
+    }
+
+    #[sqlx::test]
+    async fn test_get_medal_5541() {
+        let db = SqlitePool::connect("db/emotion24.db").await.unwrap();
+
+        let test_vesuch_1 = SimpleVersuch {
+            schueler_id: 5541,
+            kategorie_id: 4,
+            wert: 2.25
+        };
+        assert!(matches!(search::get_medal(test_vesuch_1, &db).await, search_schema::DOSBAbzeichen::None));
+
+        let test_vesuch_2 = SimpleVersuch {
+            schueler_id: 5541,
+            kategorie_id: 5,
+            wert: 11.1
+        };
+        assert!(matches!(search::get_medal(test_vesuch_2, &db).await, search_schema::DOSBAbzeichen::None));
+        
+        let test_vesuch_3 = SimpleVersuch {
+            schueler_id: 5541,
+            kategorie_id: 6,
+            wert: 337.0
+        };
+        assert!(matches!(search::get_medal(test_vesuch_3, &db).await, search_schema::DOSBAbzeichen::None));
+        
+        let test_vesuch_4 = SimpleVersuch {
+            schueler_id: 5541,
+            kategorie_id: 7,
+            wert: 10.9 
+        };
+        assert!(matches!(search::get_medal(test_vesuch_4, &db).await, search_schema::DOSBAbzeichen::None));
+        
+        let test_vesuch_5 = SimpleVersuch {
+            schueler_id: 5541,
+            kategorie_id: 10,
+            wert: 1.09
+        };
+        assert!(matches!(search::get_medal(test_vesuch_5, &db).await, search_schema::DOSBAbzeichen::None));
+    }
+
+    #[sqlx::test]
+    async fn test_search_medal_5541() {
+        let db = SqlitePool::connect("db/emotion24.db").await.unwrap();
+        
+        let search_results = search_database(&db).await.unwrap();
+        let my_5541 = search_results.into_iter().find(|x| x.id == 5541).unwrap();
+
+        assert!(matches!(my_5541.dosb_abzeichen, search_schema::DOSBAbzeichen::None));
     }
 }
