@@ -202,7 +202,7 @@ pub async fn calc_points(versuch: SimpleVersuch, db: &SqlitePool) -> i32 {
     // get kategorie for calc point
     let kat_result = sqlx::query!(
         r#"
-            SELECT name, a, c, kateGroupId as group_id FROM schueler
+            SELECT name, a, c, kateGroupIdBJS as group_id FROM schueler
                 INNER JOIN formVars ON formVars.gesch = schueler.gesch
                 INNER JOIN kategorien ON formVars.katId = kategorien.id
             WHERE kategorien.id = ? and schueler.id = ?

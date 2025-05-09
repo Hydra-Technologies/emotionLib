@@ -43,7 +43,8 @@ pub struct AltersklassenConstructor {
 pub struct Kategorie {
     pub name: String,
     pub einheit: String,
-    pub kat_group: i8,
+    pub kat_groupBJS: i8,
+    pub kat_groupDOSB: i8,
     pub digits_before: i8,
     pub digits_after: i8,
     pub versuche: u8,

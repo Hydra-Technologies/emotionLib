@@ -1,0 +1,46 @@
+{
+  "name": "Weitsprung",
+  "einheit": "m",
+  "kat_groupBJS": 2,
+  "kat_groupDOSB": 3,
+  "digits_before": 1,
+  "digits_after": 2,
+  "versuche": 3,
+  "bjs": {
+    "a_w": 1.09350,
+    "c_w": 0.00208,
+    "a_m": 1.15028,
+    "c_m": 0.00219,
+    "formel": "Sprung",
+    "altersklassen_m": [10,11,12,13,14,15,16,17,18,19,20],
+    "altersklassen_w": [10,11,12,13,14,15,16,17,18,19,20]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 10, "bronze": 2.6,   "silber": 2.9, "gold": 3.2},
+      {"alter": 11, "bronze": 2.6,   "silber": 2.9, "gold": 3.2},
+      {"alter": 12, "bronze": 3.2,   "silber": 3.5, "gold": 3.8},
+      {"alter": 13, "bronze": 3.2,   "silber": 3.5, "gold": 3.8},
+      {"alter": 14, "bronze": 3.8,   "silber": 4.1, "gold": 4.4},
+      {"alter": 15, "bronze": 3.8,   "silber": 4.1, "gold": 4.4},
+      {"alter": 16, "bronze": 4.3,   "silber": 4.6, "gold": 4.9},
+      {"alter": 17, "bronze": 4.3,   "silber": 4.6, "gold": 4.9},
+      {"alter": 18, "bronze": 4.5, "silber": 4.8,  "gold": 5.1},
+      {"alter": 19, "bronze": 4.5, "silber": 4.8,  "gold": 5.1},
+      {"alter": 20, "bronze": 4.4, "silber": 4.7,  "gold": 5}
+    ],
+    "altersklassen_w": [
+      {"alter": 10, "bronze": 2.3,   "silber": 2.6, "gold": 2.9},
+      {"alter": 11, "bronze": 2.3,   "silber": 2.6, "gold": 2.9},
+      {"alter": 12, "bronze": 2.8,   "silber": 3.1, "gold": 3.4},
+      {"alter": 13, "bronze": 2.8,   "silber": 3.1, "gold": 3.4},
+      {"alter": 14, "bronze": 3.2,   "silber": 3.5, "gold": 3.8},
+      {"alter": 15, "bronze": 3.2,   "silber": 3.5, "gold": 3.8},
+      {"alter": 16, "bronze": 3.4,   "silber": 3.7, "gold": 4},
+      {"alter": 17, "bronze": 3.4,   "silber": 3.7, "gold": 4},
+      {"alter": 18, "bronze": 3.4,   "silber": 3.7, "gold": 4},
+      {"alter": 19, "bronze": 3.4,   "silber": 3.7, "gold": 4},
+      {"alter": 20, "bronze": 3.4,   "silber": 3.7, "gold": 4}
+    ]
+  }
+}

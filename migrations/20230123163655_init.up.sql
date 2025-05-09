@@ -1,4 +1,12 @@
-CREATE TABLE katGroups(
+CREATE TABLE katGroupsBJS(
+    id INT,
+    name VARCHAR(255),
+    numPflicht INT NOT NULL,
+    forEDay BOOLEAN DEFAULT true,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE katGroupsDOSB(
     id INT,
     name VARCHAR(255),
     numPflicht INT NOT NULL,
@@ -14,8 +22,10 @@ CREATE TABLE kategorien(
     maxVers INT, 
     digits_before INT,
     digits_after INT,
-    kateGroupId INT,
-    FOREIGN KEY (kateGroupId) REFERENCES katGroups(id),
+    kateGroupIdBJS INT,
+    kateGroupIdDOSB INT,
+    FOREIGN KEY (kateGroupIdBJS) REFERENCES katGroupsBJS(id),
+    FOREIGN KEY (kateGroupIdDOSB) REFERENCES katGroupsDOSB(id),
     PRIMARY KEY (id)
 );
 
@@ -95,7 +105,13 @@ CREATE TABLE loginKeys(
     FOREIGN KEY (aufsichtId) REFERENCES schueler(id)
 );
 
-INSERT INTO katGroups(id, name, numPflicht) VALUES
+INSERT INTO katGroupsDOSB(id, name, numPflicht) VALUES
+    (1, 'Kraft', 1),
+    (2, 'Ausdauer', 1),
+    (3, 'Koordination', 1),
+    (4, 'Schnelligkeit', 1);
+
+INSERT INTO katGroupsBJS(id, name, numPflicht) VALUES
     (1, 'Sprint', 1),
     (2, 'Sprung', 1),
     (3, 'Wurf/Stoß', 1),

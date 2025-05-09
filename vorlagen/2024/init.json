@@ -1,0 +1,28 @@
+{
+  "name": "Bundesjugendspiele_2024",
+  "vorlage": 2023,
+  "bjs_bewertung": [
+    { "alter": 10, "gesch": "w", "sieger": 625, "ehren": 825},
+    { "alter": 11, "gesch": "w", "sieger": 700, "ehren": 900},
+    { "alter": 12, "gesch": "w", "sieger": 775, "ehren": 975},
+    { "alter": 13, "gesch": "w", "sieger": 825, "ehren": 1025},
+    { "alter": 14, "gesch": "w", "sieger": 850, "ehren": 1050},
+    { "alter": 15, "gesch": "w", "sieger": 875, "ehren": 1075},
+    { "alter": 16, "gesch": "w", "sieger": 900, "ehren": 1100},
+    { "alter": 17, "gesch": "w", "sieger": 925, "ehren": 1125},
+    { "alter": 18, "gesch": "w", "sieger": 950, "ehren": 1150},
+    { "alter": 19, "gesch": "w", "sieger": 950, "ehren": 1150},
+    { "alter": 20, "gesch": "w", "sieger": 950, "ehren": 1150},
+    { "alter": 10, "gesch": "m", "sieger": 600, "ehren": 775},
+    { "alter": 11, "gesch": "m", "sieger": 675, "ehren": 875},
+    { "alter": 12, "gesch": "m", "sieger": 750, "ehren": 975},
+    { "alter": 13, "gesch": "m", "sieger": 825, "ehren": 1050},
+    { "alter": 14, "gesch": "m", "sieger": 900, "ehren": 1125},
+    { "alter": 15, "gesch": "m", "sieger": 975, "ehren": 1225},
+    { "alter": 16, "gesch": "m", "sieger": 1050,"ehren":  1325},
+    { "alter": 17, "gesch": "m", "sieger": 1125,"ehren":  1400},
+    { "alter": 18, "gesch": "m", "sieger": 1200,"ehren":  1475},
+    { "alter": 19, "gesch": "m", "sieger": 1275,"ehren":  1550},
+    { "alter": 20, "gesch": "m", "sieger": 1275,"ehren":  1550}
+  ]
+}

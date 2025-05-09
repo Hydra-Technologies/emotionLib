@@ -1,0 +1,32 @@
+{
+  "name": "3kg Kugelstoß",
+  "einheit": "m",
+  "kat_groupBJS": 3,
+  "kat_groupDOSB": 1,
+  "digits_before": 2,
+  "digits_after": 1,
+  "versuche": 3,
+  "bjs": {
+    "a_w": 1.27900,
+    "c_w": 0.00398,
+    "a_m": 1.42500,
+    "c_m": 0.00370,
+    "formel": "Wurf",
+    "altersklassen_m": [12,13],
+    "altersklassen_w": [12,13,14,15,16,17,18]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 12, "bronze": 6.25,   "silber": 6.75, "gold": 7.25},
+      {"alter": 13, "bronze": 6.25,   "silber": 6.75, "gold": 7.25}
+    ],
+    "altersklassen_w": [
+      {"alter": 12, "bronze": 4.75,   "silber": 5.25, "gold": 5.75},
+      {"alter": 13, "bronze": 4.75,   "silber": 5.25, "gold": 5.75},
+      {"alter": 14, "bronze": 5.5, "silber": 6,  "gold": 6.5},
+      {"alter": 15, "bronze": 5.5, "silber": 6,  "gold": 6.5},
+      {"alter": 16, "bronze": 5.75, "silber": 6.25,  "gold": 6.75},
+      {"alter": 17, "bronze": 5.75, "silber": 6.25,  "gold": 6.75}
+    ]
+  }
+}

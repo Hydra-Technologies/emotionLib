@@ -8,12 +8,20 @@ Hier ist ein Diagramm mit der Datenbank struktur
 ```mermaid
 erDiagram
 
-    katGroups{
+    katGroupsDOSB{
         int id
         string name
         int numPflicht
         bool forEDay
     }
+    
+    katGroupsBJS{
+        int id
+        string name
+        int numPflicht
+        bool forEDay
+    }
+
     kategorien{
         int id
         string name
@@ -22,7 +30,8 @@ erDiagram
         int maxVers
         int digits_before
         int digits_after
-        int kateGroupId
+        int kateGroupIdDOSB
+        int kateGroupIdBJS
     }
 
     formVars{
@@ -79,7 +88,8 @@ erDiagram
         int buildTime
     }
 
-    kategorien }o--|| katGroups : "ist in"
+    kategorien }o--|| katGroupsDOSB : "ist in"
+    kategorien }o--|| katGroupsBJS : "ist in"
     formVars }|..|| kategorien : "hat"
     schueler }o--|| ageGroups : "ist"
     versuch }o..|| schueler : versucht

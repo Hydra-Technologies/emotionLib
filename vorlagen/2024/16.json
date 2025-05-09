@@ -1,19 +1,20 @@
 {
-  "name": "50m Lauf",
-  "einheit": "s",
-  "kat_groupBJS": 1,
-  "kat_groupDOSB": 4,
+  "name": "2000m Lauf",
+  "einheit": "d",
+  "kat_group": 4,
+  "kat_groupBJS": 4,
+  "kat_groupDOSB": 2,
   "digits_before": 2,
   "digits_after": 2,
-  "versuche": 3,
+  "versuche": 1,
   "bjs": {
-    "a_w": 3.64800,
-    "c_w": 0.00660,
-    "a_m": 3.79000,
-    "c_m": 0.00690,
+    "a_w": 1.80000,
+    "c_w": 0.00540,
+    "a_m": 1.78400,
+    "c_m": 0.00600,
     "formel": "Lauf",
     "altersklassen_m": [10,11,12,13],
-    "altersklassen_w": [10,11,12,13]
+    "altersklassen_w": [10,11,12,13,14,15]
   },
   "dosb": {
     "altersklassen_m": [

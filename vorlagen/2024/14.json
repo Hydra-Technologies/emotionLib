@@ -1,0 +1,40 @@
+{
+  "name": "800m Lauf",
+  "einheit": "d",
+  "kat_groupBJS": 4,
+  "kat_groupDOSB": 2,
+  "digits_before": 1,
+  "digits_after": 2,
+  "versuche": 1,
+  "bjs": {
+    "a_w": 2.02320,
+    "c_w": 0.00647,
+    "a_m": 2.32500,
+    "c_m": 0.00644,
+    "formel": "Lauf",
+    "altersklassen_m": [10,11,12,13,14,15,16,17,18,19,20],
+    "altersklassen_w": [10,11,12,13,14,15,16,17,18,19,20]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 10, "bronze": 305,   "silber": 260, "gold": 215},
+      {"alter": 11, "bronze": 305,   "silber": 260, "gold": 215},
+      {"alter": 12, "bronze": 285,   "silber": 240, "gold": 195},
+      {"alter": 13, "bronze": 285,   "silber": 240, "gold": 195},
+      {"alter": 14, "bronze": 260,   "silber": 220, "gold": 180},
+      {"alter": 15, "bronze": 260,   "silber": 220, "gold": 180},
+      {"alter": 16, "bronze": 245,   "silber": 205, "gold": 165},
+      {"alter": 17, "bronze": 245,   "silber": 205, "gold": 165}
+    ],
+    "altersklassen_w": [
+      {"alter": 10, "bronze": 320,   "silber": 280, "gold": 240},
+      {"alter": 11, "bronze": 320,   "silber": 280, "gold": 240},
+      {"alter": 12, "bronze": 310,   "silber": 265, "gold": 225},
+      {"alter": 13, "bronze": 310,   "silber": 265, "gold": 225},
+      {"alter": 14, "bronze": 300,   "silber": 260, "gold": 215},
+      {"alter": 15, "bronze": 300,   "silber": 260, "gold": 215},
+      {"alter": 16, "bronze": 290,   "silber": 245, "gold": 205},
+      {"alter": 17, "bronze": 290,   "silber": 245, "gold": 205}
+    ]
+  }
+}

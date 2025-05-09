@@ -1,0 +1,46 @@
+{
+  "name": "Standweitsprung",
+  "einheit": "m",
+  "kat_groupBJS": 2,
+  "kat_groupDOSB": 1,
+  "digits_before": 1,
+  "digits_after": 2,
+  "versuche": 3,
+  "bjs": {
+    "a_w": 1,
+    "c_w": 1,
+    "a_m": 1,
+    "c_m": 1,
+    "formel": "Sprung",
+    "altersklassen_m": [],
+    "altersklassen_w": []
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 10, "bronze": 1.5,   "silber": 1.7, "gold": 1.85},
+      {"alter": 11, "bronze": 1.5,   "silber": 1.7, "gold": 1.85},
+      {"alter": 12, "bronze": 1.7,   "silber": 1.9, "gold": 2.05},
+      {"alter": 13, "bronze": 1.7,   "silber": 1.9, "gold": 2.05},
+      {"alter": 14, "bronze": 1.9, "silber": 2.05,  "gold": 2.25},
+      {"alter": 15, "bronze": 1.9, "silber": 2.05,  "gold": 2.25},
+      {"alter": 16, "bronze": 2.05, "silber": 2.2,  "gold": 2.4},
+      {"alter": 17, "bronze": 2.05, "silber": 2.2,  "gold": 2.4},
+      {"alter": 18, "bronze": 2.1, "silber": 2.3,  "gold": 2.5},
+      {"alter": 19, "bronze": 2.1, "silber": 2.3,  "gold": 2.5},
+      {"alter": 20, "bronze": 2.1, "silber": 2.3,  "gold": 2.5}
+    ],
+    "altersklassen_w": [
+      {"alter": 10, "bronze": 1.3,   "silber": 1.45, "gold": 1.65},
+      {"alter": 11, "bronze": 1.3,   "silber": 1.45, "gold": 1.65},
+      {"alter": 12, "bronze": 1.4,   "silber": 1.6, "gold": 1.8},
+      {"alter": 13, "bronze": 1.4,   "silber": 1.6, "gold": 1.8},
+      {"alter": 14, "bronze": 1.55, "silber": 1.7,  "gold": 1.9},
+      {"alter": 15, "bronze": 1.55, "silber": 1.7,  "gold": 1.9},
+      {"alter": 16, "bronze": 1.65, "silber": 1.8,  "gold": 2},
+      {"alter": 17, "bronze": 1.65, "silber": 1.8,  "gold": 2},
+      {"alter": 18, "bronze": 1.65, "silber": 1.85,  "gold": 2.05},
+      {"alter": 19, "bronze": 1.65, "silber": 1.85,  "gold": 2.05},
+      {"alter": 20, "bronze": 1.6, "silber": 1.8,  "gold": 2}
+    ]
+  }
+}

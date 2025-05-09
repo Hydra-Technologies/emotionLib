@@ -1,0 +1,30 @@
+{
+  "name": "80g Schlagball",
+  "einheit": "m",
+  "kat_groupBJS": 3,
+  "kat_groupDOSB": 1,
+  "digits_before": 2,
+  "digits_after": 1,
+  "versuche": 3,
+  "bjs": {
+    "a_w": 2.02320,
+    "c_w": 0.00874,
+    "a_m": 2.80000,
+    "c_m": 0.01100,
+    "formel": "Wurf/Stoß",
+    "altersklassen_m": [10,11],
+    "altersklassen_w": [10,11,12,13]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 10, "bronze": 21,   "silber": 25, "gold": 28},
+      {"alter": 11, "bronze": 21,   "silber": 25, "gold": 28}
+    ],
+    "altersklassen_w": [
+      {"alter": 10, "bronze": 11,   "silber": 15, "gold": 18},
+      {"alter": 11, "bronze": 11,   "silber": 15, "gold": 18},
+      {"alter": 12, "bronze": 15, "silber": 18,  "gold": 22},
+      {"alter": 13, "bronze": 15, "silber": 18,  "gold": 22}
+    ]
+  }
+}

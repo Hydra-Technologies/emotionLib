@@ -1,19 +1,19 @@
 {
-  "name": "50m Lauf",
-  "einheit": "s",
-  "kat_groupBJS": 1,
-  "kat_groupDOSB": 4,
+  "name": "1kg Schleuderball",
+  "einheit": "m",
+  "kat_groupBJS": 3,
+  "kat_groupDOSB": 3,
   "digits_before": 2,
-  "digits_after": 2,
-  "versuche": 3,
+  "digits_after": 1,
+  "versuche": 1,
   "bjs": {
-    "a_w": 3.64800,
-    "c_w": 0.00660,
-    "a_m": 3.79000,
-    "c_m": 0.00690,
-    "formel": "Lauf",
-    "altersklassen_m": [10,11,12,13],
-    "altersklassen_w": [10,11,12,13]
+    "a_w": 1.08500,
+    "c_w": 0.00921,
+    "a_m": 1.59500,
+    "c_m": 0.009125,
+    "formel": "Wurf/Stoß",
+    "altersklassen_m": [14,15,16,17,18,19,20],
+    "altersklassen_w": [14,15,16,17,18,19,20]
   },
   "dosb": {
     "altersklassen_m": [

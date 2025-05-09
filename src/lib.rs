@@ -61,12 +61,12 @@ pub mod interact {
             return Err(400);
         }
         let query_response =
-            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupId as group_id FROM kategorien
+            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupIdDOSB as group_id FROM kategorien
     INNER JOIN dosbKat b ON b.katId = kategorien.id
-    INNER JOIN katGroups ON kategorien.kateGroupId = katGroups.id
+    INNER JOIN katGroupsDOSB ON kategorien.kateGroupIdDOSB = katGroupsDOSB.id
     INNER JOIN schueler ON schueler.age = b.age AND schueler.gesch = b.gesch
     LEFT JOIN versuch ON schueler.id = versuch.schuelerId AND kategorien.id = versuch.kategorieId AND versuch.isReal
-    WHERE schueler.id = ? ORDER BY kategorien.kateGroupId;"#, id)
+    WHERE schueler.id = ? ORDER BY kategorien.kateGroupIdDOSB;"#, id)
                 .fetch_all(db)
                 .await;
 
@@ -97,12 +97,12 @@ pub mod interact {
             return Err(400);
         }
         let query_response =
-            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupId as group_id FROM kategorien
+            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupIdBJS as group_id FROM kategorien
     INNER JOIN bjsKat b ON b.katId = kategorien.id
-    INNER JOIN katGroups ON kategorien.kateGroupId = katGroups.id
+    INNER JOIN katGroupsBJS ON kategorien.kateGroupIdBJS = katGroupsBJS.id
     INNER JOIN schueler ON schueler.age = b.age AND schueler.gesch = b.gesch
     LEFT JOIN versuch ON schueler.id = versuch.schuelerId AND kategorien.id = versuch.kategorieId AND versuch.isReal
-    WHERE schueler.id = ? ORDER BY kategorien.kateGroupId;"#, id)
+    WHERE schueler.id = ? ORDER BY kategorien.kateGroupIdBJS;"#, id)
                 .fetch_all(db)
                 .await;
 
@@ -230,11 +230,11 @@ pub mod interact {
         SELECT * FROM (
         SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MIN(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprint and Ausdauer
             INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupId IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
+            WHERE kategorien.kateGroupIdBJS IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
         UNION 
         SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MAX(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprung and Wurf/Stoß
             INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupId IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
+            WHERE kategorien.kateGroupIdBJS IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
         ) WHERE schueler_id = ? AND kategorie_id = ?
         "#, id, kat_id).fetch_one(db).await;
 
@@ -365,10 +365,10 @@ pub mod interact {
         let query_result = sqlx::query_as!(
             model::KatGroup,
             r#"
-        SELECT katId as id, kateGroupId as group_id FROM bjsKat
+        SELECT katId as id, kateGroupIdBJS as group_id FROM bjsKat
         INNER JOIN schueler ON schueler.age = bjsKat.age AND schueler.gesch = bjsKat.gesch
         INNER JOIN kategorien ON kategorien.id = katId
-        WHERE schueler.id = ? ORDER BY kateGroupId
+        WHERE schueler.id = ? ORDER BY kateGroupIdBJS
         "#,
             id
         )
@@ -523,7 +523,7 @@ pub mod interact {
 
     pub async fn get_kategorie(id: i32, db: &SqlitePool) -> schema::Kategorie {
         let result = sqlx::query_as!(model::Kategorie, r#"
-        SELECT id, name, lauf, einheit, maxVers as max_vers, digits_before, digits_after, kateGroupId as kat_group_id FROM kategorien WHERE id = ?
+        SELECT id, name, lauf, einheit, maxVers as max_vers, digits_before, digits_after, kateGroupIdBJS as kat_group_id FROM kategorien WHERE id = ?
         "#, id).fetch_one(db).await;
         return kategorie_model2schema(result.unwrap());
     }
@@ -532,7 +532,7 @@ pub mod interact {
         // get kategorie for calc point
         let kat_result = sqlx::query!(
             r#"
-            SELECT name, a, c, kateGroupId as group_id FROM schueler
+            SELECT name, a, c, kateGroupIdBJS as group_id FROM schueler
                 INNER JOIN formVars ON formVars.gesch = schueler.gesch
                 INNER JOIN kategorien ON formVars.katId = kategorien.id
             WHERE kategorien.id = ? and schueler.id = ?

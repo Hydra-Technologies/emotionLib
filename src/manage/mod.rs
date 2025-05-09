@@ -8,6 +8,7 @@ use std::fs;
 use std::fs::File;
 use std::path::Path;
 use std::string::String;
+use std::ffi::OsStr;
 use walkdir;
 
 use self::schema::{BjsKategorieConstructor, DosbAlterBewertung, DosbKategorieConstructor};
@@ -62,12 +63,8 @@ pub async fn create_event(
     if data.bjs_bewertung.is_some() {
         insert_bjs_bewertungen(&con, data.bjs_bewertung.unwrap()).await?;
     } else {
-        let path = [
-            vorlagen_dir.clone(),
-            data.vorlage.to_string(),
-            "/init.json".to_string(),
-        ]
-        .join("");
+        let path = format!("{}{}/init.json", vorlagen_dir, data.vorlage);
+
         let reader = std::io::BufReader::new(File::open(path).unwrap());
         let bjs: EventConstructor = serde_json::from_reader(reader).unwrap();
 
@@ -134,7 +131,7 @@ pub fn get_kat_list_from_vorlage(
                             .unwrap(),
                         name: k.name,
                         einheit: k.einheit,
-                        kat_group: k.kat_group,
+                        kat_group: k.kat_groupBJS,
                         digits_before: k.digits_before,
                         digits_after: k.digits_after,
                         versuche: k.versuche,
@@ -147,39 +144,60 @@ pub fn get_kat_list_from_vorlage(
     }
     return Ok(kat_list);
 }
-
+/**
+ * checks the given Vorlagen Path for Syntax error and if the all the Attributes are there
+ */
 pub fn check_vorlagen(vorlagen_dir: String) -> Result<(), String> {
     let vorlagen = walkdir::WalkDir::new(vorlagen_dir);
+    // walks through the json files in the vorlage
     for vorlage in vorlagen {
-        if vorlage.is_ok() {
-            let dir = vorlage.unwrap();
-            if !dir.path().is_dir() {
-                let file = File::open(dir.path()).unwrap();
-                let reader = std::io::BufReader::new(file);
-                if dir.file_name().eq("init.json") {
-                    let _: schema::EventConstructor = match serde_json::from_reader(reader) {
-                        Err(e) => {
-                            return Err(format!(
-                                "Couldnt read init file {}: {}",
-                                dir.path().to_str().unwrap(),
-                                e.to_string()
-                            ))
-                        }
-                        Ok(r) => r,
-                    };
-                } else {
-                    let _: schema::Kategorie = match serde_json::from_reader(reader) {
-                        Err(e) => {
-                            return Err(format!(
-                                "Couldnt read Kategorie file {}: {}",
-                                dir.path().to_str().unwrap(),
-                                e.to_string()
-                            ))
-                        }
-                        Ok(r) => r,
-                    };
+        // if it checksout
+        if vorlage.is_err() {
+            continue;
+        }
+        let dir = vorlage.unwrap();
+
+
+        // and it is a file
+        if dir.path().is_dir() {
+            continue;
+        }
+
+        // and it is a json
+        if dir.path().extension().unwrap() != OsStr::new("json") {
+            continue;
+        }
+
+        // then open it.
+        let file = File::open(dir.path()).unwrap();
+        let reader = std::io::BufReader::new(file);
+
+        // if it is the init
+        if dir.file_name().eq("init.json") {
+            // then check if you can open it
+            let _: schema::EventConstructor = match serde_json::from_reader(reader) {
+                Err(e) => {
+                    return Err(format!(
+                            "Couldnt read init file {}: {}",
+                            dir.path().to_str().unwrap(),
+                            e.to_string()
+                    ))
                 }
-            }
+                Ok(r) => r,
+            };
+        } else {
+            // else it must be a Kategorien file 
+            // check if it is in the right format
+            let _: schema::Kategorie = match serde_json::from_reader(reader) {
+                Err(e) => {
+                    return Err(format!(
+                            "Couldnt read Kategorie file {}: {}",
+                            dir.path().to_str().unwrap(),
+                            e.to_string()
+                    ))
+                }
+                Ok(r) => r,
+            };
         }
     }
     return Ok(());
@@ -190,14 +208,15 @@ pub fn get_kat_from_vorlage(
     year: i32,
     vorlage: schema::KategorieVorlage,
 ) -> Result<schema::Kategorie, ManageError> {
-    let path_string = [
+    let path_string = format!("{}{}/{}.json", vorlagen_dir, year, vorlage.id);
+    /*let path_string = [
         vorlagen_dir,
         year.to_string(),
         "/".to_string(),
         vorlage.id.to_string(),
         ".json".to_string(),
     ]
-    .join("");
+    .join("");*/
 
     let path = Path::new(&path_string);
     let reader = match File::open(path) {
@@ -225,7 +244,8 @@ pub fn get_kat_from_vorlage(
         schema::Kategorie {
             name: changes.name.unwrap_or(kat.name),
             einheit: kat.einheit,
-            kat_group: kat.kat_group,
+            kat_groupBJS: kat.kat_groupBJS,
+            kat_groupDOSB: kat.kat_groupDOSB,
             digits_before: changes.digits_before.unwrap_or(kat.digits_before),
             digits_after: changes.digits_after.unwrap_or(kat.digits_after),
             versuche: changes.versuche.unwrap_or(kat.versuche),
@@ -341,7 +361,8 @@ pub fn get_kat_from_vorlage(
         schema::Kategorie {
             name: kat.name,
             einheit: kat.einheit,
-            kat_group: kat.kat_group,
+            kat_groupBJS: kat.kat_groupBJS,
+            kat_groupDOSB: kat.kat_groupDOSB,
             digits_before: kat.digits_before,
             digits_after: kat.digits_after,
             versuche: kat.versuche,
@@ -434,9 +455,9 @@ async fn insert_bjs_bewertungen(
 }
 
 async fn insert_kat_in_db(db: &SqlitePool, kat: schema::Kategorie) -> Result<(), ManageError> {
-    let lauf = kat.kat_group == 1 || kat.kat_group == 4;
-    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, digits_before, digits_after, kateGroupId) VALUES (?,?,?,?,?,?,?)",
-        kat.name, kat.einheit, lauf, kat.versuche, kat.digits_before, kat.digits_after, kat.kat_group).execute(db).await {
+    let lauf = kat.kat_groupBJS == 1 || kat.kat_groupBJS == 4;
+    let id = match sqlx::query!("INSERT INTO kategorien(name, einheit, lauf, maxVers, digits_before, digits_after, kateGroupIdBJS, kateGroupIdDOSB) VALUES (?,?,?,?,?,?,?,?)",
+        kat.name, kat.einheit, lauf, kat.versuche, kat.digits_before, kat.digits_after, kat.kat_groupBJS, kat.kat_groupDOSB).execute(db).await {
         Ok(r) => r.last_insert_rowid(),
         Err(_e) => return Err(ManageError::Internal{ message: "Error while inserting into Kategorien".to_string() })
     };

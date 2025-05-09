@@ -1,0 +1,29 @@
+{
+  "name": "4kg Kugelstoß",
+  "einheit": "m",
+  "kat_groupBJS": 3,
+  "kat_groupDOSB": 1,
+  "digits_before": 2,
+  "digits_after": 1,
+  "versuche": 3,
+  "bjs": {
+    "a_w": 1.27900,
+    "c_w": 0.00398,
+    "a_m": 1.42500,
+    "c_m": 0.00370,
+    "formel": "Wurf",
+    "altersklassen_m": [14,15],
+    "altersklassen_w": [18,19,20]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 14, "bronze": 7,   "silber": 7.5, "gold": 8},
+      {"alter": 15, "bronze": 7,   "silber": 7.5, "gold": 8}
+    ],
+    "altersklassen_w": [
+      {"alter": 18, "bronze": 6.5,   "silber": 7, "gold": 7.5},
+      {"alter": 19, "bronze": 6.5,   "silber": 7, "gold": 7.5},
+      {"alter": 20, "bronze": 6.5,   "silber": 7, "gold": 7.5}
+    ]
+  }
+}

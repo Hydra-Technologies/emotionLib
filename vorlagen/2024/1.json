@@ -1,0 +1,32 @@
+{
+  "name": "50m Lauf",
+  "einheit": "s",
+  "kat_groupBJS": 1,
+  "kat_groupDOSB": 4,
+  "digits_before": 2,
+  "digits_after": 2,
+  "versuche": 1,
+  "bjs": {
+    "a_w": 3.64800,
+    "c_w": 0.00660,
+    "a_m": 3.79000,
+    "c_m": 0.00690,
+    "formel": "Lauf",
+    "altersklassen_m": [10,11,12,13],
+    "altersklassen_w": [10,11,12,13]
+  },
+  "dosb": {
+    "altersklassen_m": [
+      {"alter": 10, "bronze": 10.3,   "silber": 9.3, "gold": 8.4},
+      {"alter": 11, "bronze": 10.3,   "silber": 9.3, "gold": 8.4},
+      {"alter": 12, "bronze": 9.7, "silber": 8.9,  "gold": 8.1},
+      {"alter": 13, "bronze": 9.7, "silber": 8.9,  "gold": 8.1}
+    ],
+    "altersklassen_w": [
+      {"alter": 10, "bronze": 11,   "silber": 10.1, "gold": 9.1},
+      {"alter": 11, "bronze": 11,   "silber": 10.1, "gold": 9.1},
+      {"alter": 12, "bronze": 10.6, "silber": 9.6,  "gold": 8.5},
+      {"alter": 13, "bronze": 10.6, "silber": 9.6,  "gold": 8.5}
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "75m Lauf",
+  "einheit": "s",
+  "kat_groupBJS": 1,
+  "kat_groupDOSB": 4,
+  "digits_before": 2,
+  "digits_after": 2,
+  "versuche": 1,
+  "bjs": {
+    "a_w": 3.99800,
+    "c_w": 0.00660,
+    "a_m": 4.10000,
+    "c_m": 0.00664,
+    "formel": "Lauf",
+    "altersklassen_m": [13,14,15],
+    "altersklassen_w": [13,14,15]
+  },
+  "dosb": {
+    "altersklassen_m": [],
+    "altersklassen_w": []
+  }
+}
