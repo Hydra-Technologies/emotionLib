@@ -17,7 +17,8 @@ pub struct SchuelerResultConstructor {
     id: i64,
     bjs_punkte: Vec<i64>,
     dosb_punkte: i32,
-    kat_groups: Vec<i64>,
+    kat_groups_bjs: Vec<i64>,
+    kat_groups_dosb: Vec<i64>,
 }
 
 pub async fn search_database(
@@ -50,11 +51,18 @@ pub async fn search_database(
             db,
         )
         .await;
+
+
         match schueler_map.get(&versuch.schueler_id) {
             Some(r) => {
-                let mut kat_groups: Vec<i64> = r.kat_groups.clone();
+                let mut kat_groups_bjs: Vec<i64> = r.kat_groups_bjs.clone();
+                let mut kat_groups_dosb: Vec<i64> = r.kat_groups_dosb.clone();
+                kat_groups_bjs.push(versuch.kat_group_id_bjs.unwrap());
+                if versuch.dosb_abzeichen > 0 {
+                    kat_groups_dosb.push(versuch.kat_group_id_dosb.unwrap());
+                }
+
                 let mut bjs_punkte: Vec<i64> = r.bjs_punkte.clone();
-                kat_groups.push(versuch.kat_group_id.unwrap());
                 if versuch_bjs_punkte > 0 {
                     bjs_punkte.push(versuch_bjs_punkte as i64);
                 }
@@ -65,7 +73,8 @@ pub async fn search_database(
                         id: versuch.schueler_id,
                         bjs_punkte,
                         dosb_punkte: versuch.dosb_abzeichen + r.dosb_punkte,
-                        kat_groups,
+                        kat_groups_bjs,
+                        kat_groups_dosb,
                     },
                 );
             }
@@ -80,7 +89,8 @@ pub async fn search_database(
                             vec![]
                         },
                         dosb_punkte: versuch.dosb_abzeichen,
-                        kat_groups: vec![versuch.kat_group_id.unwrap()],
+                        kat_groups_bjs: vec![versuch.kat_group_id_bjs.unwrap()],
+                        kat_groups_dosb: vec![versuch.kat_group_id_dosb.unwrap()],
                     },
                 );
             }
@@ -102,11 +112,12 @@ pub async fn search_database(
                     id,
                     bjs_punkte: vec![],
                     dosb_punkte: 0,
-                    kat_groups: vec![],
-                })
+                    kat_groups_bjs: vec![],
+                    kat_groups_dosb: vec![],
+                })  
         }).map(|c| async move {
             // for schueler with no trys
-            if c.kat_groups.is_empty() {
+            if c.kat_groups_bjs.is_empty() &&  c.kat_groups_dosb.is_empty(){
                 return search_schema::SchuelerResult {
                     id: c.id,
                     bjs_punkte: 0,
@@ -130,7 +141,7 @@ pub async fn search_database(
                     search_schema::BJSUrkunde::None
                 },
                 dosb_punkte: c.dosb_punkte as i64,
-                dosb_abzeichen: if !([1, 2, 3, 4].iter().all(|g| c.kat_groups.contains(g))) { search_schema::DOSBAbzeichen::None }
+                dosb_abzeichen: if !([1, 2, 3, 4].iter().all(|g| c.kat_groups_dosb.contains(g))) { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 4 { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 8  { search_schema::DOSBAbzeichen::Bronze }
                     else if c.dosb_punkte < 11  { search_schema::DOSBAbzeichen::Silber }

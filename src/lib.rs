@@ -1086,4 +1086,17 @@ mod tests {
         dosb_tasks_ids.sort();
         assert_eq!(dosb_tasks_ids, vec![4, 6, 7, 8, 9, 10]);
     }
+
+    #[sqlx::test]
+    async fn debug_5513() {
+        let db = SqlitePool::connect("testData/eMotionday24.db").await.unwrap();
+
+        let dosb_pocal = interact::get_schueler(&5513, &db).await.unwrap();
+        println!("{:#?}", dosb_pocal);
+
+
+        panic!("Worked")
+    }
+
+
 }
