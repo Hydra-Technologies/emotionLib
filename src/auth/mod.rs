@@ -22,11 +22,9 @@ use rand::prelude::*;
 /**
  * includes all the information to access the Database
  */
-struct Event {
+pub struct Event {
     id: String,
     name: String,
-    db: String,
-    owner: String,
 }
 
 /**
@@ -183,6 +181,17 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
 
     } else {
         Ok(RequestUser::TmpUser { api_key })
+    }
+}
+
+pub async fn get_event(event_id: String, db: &SqlitePool) -> Result<Event,HttpResponse> {
+    return match sqlx::query_as!(Event, r#"
+        SELECT id, name FROM event WHERE id = ?
+    "#, event_id).fetch_one(db)
+        .await {
+            Ok(e) => Ok(e),
+            Err(sqlx::Error::RowNotFound) => NotFound!("The event was not found in the auth db"),
+            Err(e) => return  InternalServer!(format!("Error while fetching the event ({e})"))
     }
 }
 
