@@ -23,8 +23,8 @@ use rand::prelude::*;
  * includes all the information to access the Database
  */
 pub struct Event {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
 }
 
 /**

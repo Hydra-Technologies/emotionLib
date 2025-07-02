@@ -41,6 +41,11 @@ fn ensure_event_impl(input: TokenStream) -> TokenStream {
                 Err(e) => return e
             };
 
+            let event_con = match data.event_cons.get(&event.id) {
+                Some(c) => c,
+                None => return HttpResponse::NotFound().into()
+            };
+
             #(#statements)*
         }
     )
