@@ -174,7 +174,11 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
                 Err(_) => return BadRequest!("There where none-ascii characters in the apikey")
             };
 
-            return Ok(RequestUser::AdminWithEvent { api_key, event_name})
+            return if event_name.trim() == "" {
+                Ok(RequestUser::Admin { api_key })
+            } else {
+                Ok(RequestUser::AdminWithEvent { api_key, event_name})
+            }
         }
 
         Ok(RequestUser::Admin { api_key })
