@@ -26,11 +26,11 @@ fn ensure_event_impl(input: TokenStream) -> TokenStream {
         
         #(#attrs)*
         #vis #sig {
-            let user = match emotionLib::auth::get_user(&req, &data.db).await {
+            let __user = match emotionLib::auth::get_user(&req, &data.db).await {
                 Ok(u) => u,
                 Err(e) => return e
             };
-            let __event_id = match &user {
+            let __event_id = match __user {
                 AuthUser::TmpUser {event_id, ..} => event_id,
                 AuthUser::AdminWithEvent {event_id, ..} => event_id,
                 AuthUser::Admin {..} | AuthUser::NotApprovedTmpUser {..} => return HttpResponse::Forbidden().into()
@@ -110,9 +110,9 @@ fn ensure_admin_impl(input: TokenStream) -> TokenStream {
                 Ok(u) => u,
                 Err(e) => return e
             };
-            match &user {
-                AuthUser::Admin {..} | AuthUser::AdminWithEvent {..},
-                AuthUser::TmpUser {..} | AuthUser::NotApprovedTmpUser {..} => return HttpResponse::Forbidden().into()
+
+            if(matches!(user, AuthUser::TmpUser{..}) || matches!(user, AuthUser::NotApprovedTmpUser{..})) {
+                return HttpResponse::Forbidden().into(); 
             }
 
             #(#statements)*
