@@ -26,7 +26,7 @@ fn ensure_event_impl(input: TokenStream) -> TokenStream {
         
         #(#attrs)*
         #vis #sig {
-            let user = match crate::auth::get_user(&req, &data.db).await {
+            let user = match emotionLib::auth::get_user(&req, &data.db).await {
                 Ok(u) => u,
                 Err(e) => return e
             };
@@ -36,7 +36,7 @@ fn ensure_event_impl(input: TokenStream) -> TokenStream {
                 AuthUser::Admin {..} | AuthUser::NotApprovedTmpUser {..} => return HttpResponse::Forbidden().into()
             };
 
-            let event = match crate::auth::get_event(__event_id.to_string(), &data.db).await {
+            let event = match emotionLib::auth::get_event(__event_id.to_string(), &data.db).await {
                 Ok(e) => e,
                 Err(e) => return e
             };
@@ -71,7 +71,7 @@ fn ensure_user_impl(input: TokenStream) -> TokenStream {
         
         #(#attrs)*
         #vis #sig {
-            let user = match crate::auth::get_user(&req, &data.db).await {
+            let user = match emotionLib::auth::get_user(&req, &data.db).await {
                 Ok(u) => u,
                 Err(e) => return e
             };
@@ -106,7 +106,7 @@ fn ensure_admin_impl(input: TokenStream) -> TokenStream {
         
         #(#attrs)*
         #vis #sig {
-            let user = match crate::auth::get_user(&req, &data.db).await {
+            let user = match emotionLib::auth::get_user(&req, &data.db).await {
                 Ok(u) => u,
                 Err(e) => return e
             };
