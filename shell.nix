@@ -4,6 +4,8 @@ pkgs.mkShell {
   # were you to to use nix-build not nix-shell and build whatever you were working on
   nativeBuildInputs = with pkgs.buildPackages; [
     rustup
+    cargo
+    rustc
     openssl
     pkg-config
   ];
