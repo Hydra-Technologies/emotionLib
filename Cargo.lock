@@ -752,6 +752,7 @@ version = "0.1.8"
 dependencies = [
  "actix-rt",
  "actix-web",
+ "emotion_lib_derive",
  "futures",
  "log",
  "rand",
@@ -762,6 +763,14 @@ dependencies = [
  "sqlx",
  "time-test",
  "walkdir",
+]
+
+[[package]]
+name = "emotion_lib_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.104",
 ]
 
 [[package]]

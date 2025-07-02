@@ -1,3 +1,4 @@
 /target/
 .idea
 testData/Test_Event*
+/emotion_lib_derive/target
