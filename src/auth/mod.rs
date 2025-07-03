@@ -18,6 +18,7 @@ use sha256::digest;
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::prelude::*;
+use log::info;
 
 /**
  * includes all the information to access the Database
@@ -177,6 +178,7 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
             return if event_name.trim() == "" {
                 Ok(RequestUser::Admin { api_key })
             } else {
+                info!("event_name is: {}", event_name);
                 Ok(RequestUser::AdminWithEvent { api_key, event_name})
             }
         }
