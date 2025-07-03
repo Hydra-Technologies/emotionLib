@@ -167,7 +167,7 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
     return if api_key.contains("_") {
 
         // check if the event header is set
-        let event_opt = req.headers().get(actix_web::http::header::AUTHORIZATION);
+        let event_opt = req.headers().get("Event");
         if event_opt.is_some() {
             // turn the HeaderValue into a string
             let event_name= match event_opt.unwrap().to_str() {
@@ -178,7 +178,6 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
             return if event_name.trim() == "" {
                 Ok(RequestUser::Admin { api_key })
             } else {
-                info!("event_name is: {}", event_name);
                 Ok(RequestUser::AdminWithEvent { api_key, event_name})
             }
         }
