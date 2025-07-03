@@ -35,7 +35,7 @@ pub struct Event {
  */
 pub enum RequestUser {
     Admin{api_key: String},
-    AdminWithEvent{api_key: String, event_name: String},
+    AdminWithEvent{api_key: String, event_id: String},
     TmpUser{api_key: String},
 }
 
@@ -128,11 +128,12 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
             }
             
             // add the event if it exists
-            if let RequestUser::AdminWithEvent { event_name, api_key }= user {
+            if let RequestUser::AdminWithEvent { event_id, api_key }= user {
                 let user_data_opt= sqlx::query!( r#"
-                    SELECT id from event WHERE name = ?
-                "#, event_name).fetch_one(db).await;
+                    SELECT id from event WHERE id = ?
+                "#, event_id).fetch_one(db).await;
 
+                info!("Eventid: {}");
                 let event_id= match user_data_opt {
                     Ok(r) => r.id,
                     Err(sqlx::Error::RowNotFound) => return NotFound!("The event was not found"),
@@ -170,15 +171,15 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
         let event_opt = req.headers().get("Event");
         if event_opt.is_some() {
             // turn the HeaderValue into a string
-            let event_name= match event_opt.unwrap().to_str() {
+            let event_id= match event_opt.unwrap().to_str() {
                 Ok(s) => s.to_string(),
-                Err(_) => return BadRequest!("There where none-ascii characters in the apikey")
+                Err(_) => return BadRequest!("There where none-ascii characters in the event_id")
             };
 
-            return if event_name.trim() == "" {
+            return if event_id.trim() == "" {
                 Ok(RequestUser::Admin { api_key })
             } else {
-                Ok(RequestUser::AdminWithEvent { api_key, event_name})
+                Ok(RequestUser::AdminWithEvent { api_key, event_id})
             }
         }
 
