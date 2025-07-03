@@ -6,6 +6,8 @@ mod model;
 pub mod schema;
 pub mod search;
 pub mod auth;
+#[macro_use]
+pub mod http_res;
 
 // not_now_TODO write class with all the Functions (but not today)
 pub struct EmotionCon {

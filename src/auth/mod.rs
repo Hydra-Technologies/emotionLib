@@ -2,16 +2,15 @@
 //! 
 //! The main idea is to set a macro for a endpoint like:
 //! ```rust
-//! #[route(GET, "/"),NeedsAdmin,NeedsEvent]
+//! #[route(GET, "/")]
+//! #[ensure_event]
 //! pub async fn addEventCategory() { ... }
 //! ```
 //!
 //! This should enforce that the user is a Admin, as well as a user varible, also it should expose
 //! the event Varible
 
-#[macro_use]
-mod http_res;
-
+use crate::{Forbidden,NotFound,InternalServer, BadRequest, Unauthorized};
 use sqlx::SqlitePool;
 use actix_web::{HttpRequest, HttpResponse};
 use sha256::digest;
@@ -72,12 +71,12 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
 
             let user_data = match validated {
                 Ok(r) => r,
-                Err(sqlx::Error::RowNotFound) => return NotFound!("The api_key was not found"),
-                Err(_) => return  InternalServer!("Error while fetching user db")
+                Err(sqlx::Error::RowNotFound) => return Err(NotFound!("The api_key was not found")),
+                Err(_) => return  Err(InternalServer!("Error while fetching user db"))
             };
 
             if current_timestamp - user_data.last_refresh > 18000 {
-                return Forbidden!("Sorry, key was not refreshed");
+                return Err(Forbidden!("Sorry, key was not refreshed"));
             }
 
             // reset last_refresh
@@ -86,7 +85,7 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
             "#, current_timestamp, api_key)
                 .execute(db)
                 .await {
-                    return InternalServer!(format!("There was an Error while Updating the tmp_user ({e})"));
+                    return Err(InternalServer!(format!("There was an Error while Updating the tmp_user ({e})")));
 
             }
 
@@ -97,7 +96,7 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
             // because the user has been vouched for event_id cannot be null
             let event_id = match user_data.event_id {
                 Some(id) => id,
-                None => return InternalServer!("You don't have a event! Why?")
+                None => return Err(InternalServer!("You don't have a event! Why?"))
             };
 
             return Ok(AuthUser::TmpUser { id: user_data.id, api_key, event_id })
@@ -110,12 +109,12 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
 
             let user_data = match user_data_opt {
                 Ok(r) => r,
-                Err(sqlx::Error::RowNotFound) => return NotFound!("The admin_api_key was not found"),
-                Err(_) => return  InternalServer!("Error while fetching user db")
+                Err(sqlx::Error::RowNotFound) => return Err(NotFound!("The admin_api_key was not found")),
+                Err(_) => return  Err(InternalServer!("Error while fetching user db"))
             };
 
             if current_timestamp - user_data.last_refresh > 36000 {
-                return Forbidden!("Sorry, key was not refreshed");
+                return Err(Forbidden!("Sorry, key was not refreshed"));
             }
 
             // reset last_refresh
@@ -124,7 +123,7 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
             "#, current_timestamp, api_key)
                 .execute(db)
                 .await {
-                    return InternalServer!(format!("There was an error reseting the refresh id ({e})"))
+                    return Err(InternalServer!(format!("There was an error reseting the refresh id ({e})")))
             }
             
             // add the event if it exists
@@ -133,11 +132,11 @@ pub async fn get_user(req: &HttpRequest, db: &SqlitePool) -> Result<AuthUser, Ht
                     SELECT id from event WHERE id = ?
                 "#, event_id).fetch_one(db).await;
 
-                info!("Eventid: {}");
+                info!("Eventid: {}", event_id);
                 let event_id= match user_data_opt {
                     Ok(r) => r.id,
-                    Err(sqlx::Error::RowNotFound) => return NotFound!("The event was not found"),
-                    Err(_) => return  InternalServer!("Error while fetching user db")
+                    Err(sqlx::Error::RowNotFound) => return Err(NotFound!("The event was not found")),
+                    Err(_) => return  Err(InternalServer!("Error while fetching user db"))
                 };
 
                 return Ok(AuthUser::AdminWithEvent{ api_key, event_id});
@@ -154,13 +153,13 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
     // check if apikey exists 
     let api_key_opt = req.headers().get(actix_web::http::header::AUTHORIZATION);
     if api_key_opt.is_none() {
-        return Unauthorized!("No api_key was supplied");
+        return Err(Unauthorized!("No api_key was supplied"));
     }
 
     // turn the HeaderValue into a string
     let api_key = match api_key_opt.unwrap().to_str() {
         Ok(s) => s.to_string(),
-        Err(_) => return BadRequest!("There where none-ascii characters in the api key")
+        Err(_) => return Err(BadRequest!("There where none-ascii characters in the api key"))
     };
 
 
@@ -173,7 +172,7 @@ fn req2user(req: &HttpRequest) -> Result<RequestUser, HttpResponse> {
             // turn the HeaderValue into a string
             let event_id= match event_opt.unwrap().to_str() {
                 Ok(s) => s.to_string(),
-                Err(_) => return BadRequest!("There where none-ascii characters in the event_id")
+                Err(_) => return Err(BadRequest!("There where none-ascii characters in the event_id"))
             };
 
             return if event_id.trim() == "" {
@@ -196,8 +195,8 @@ pub async fn get_event(event_id: String, db: &SqlitePool) -> Result<Event,HttpRe
     "#, event_id).fetch_one(db)
         .await {
             Ok(e) => Ok(e),
-            Err(sqlx::Error::RowNotFound) => NotFound!("The event was not found in the auth db"),
-            Err(e) => return  InternalServer!(format!("Error while fetching the event ({e})"))
+            Err(sqlx::Error::RowNotFound) => Err(NotFound!("The event was not found in the auth db")),
+            Err(e) => return  Err(InternalServer!(format!("Error while fetching the event ({e})")))
     }
 }
 
@@ -205,26 +204,26 @@ pub async fn get_event(event_id: String, db: &SqlitePool) -> Result<Event,HttpRe
 /**
  * This function can be used to vouch for a tmp user
  */
-pub async fn vouch_tmp_user(db: &SqlitePool, tmp_user_id: String) -> Result<(), HttpResponse> {
+pub async fn vouch_tmp_user(db: &SqlitePool, event_id: String, tmp_user_id: String) -> Result<(), HttpResponse> {
     let current_timestamp: i64 = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
 
     let rows_affected = match sqlx::query!(r#"
-        UPDATE tmp_user SET vouched = True, time_of_creation = ? WHERE id = ?
-    "#, current_timestamp, tmp_user_id)
+        UPDATE tmp_user SET vouched = True, time_of_creation = ?, event_id = ? WHERE id = ?
+    "#, current_timestamp, event_id, tmp_user_id)
         .execute(db).await {
             Ok(r) => r.rows_affected(),
-            Err(e) => return InternalServer!(format!("There was an error while vouching for user ({e})"))
+            Err(e) => return Err(InternalServer!(format!("There was an error while vouching for user ({e})")))
         };
     
     if rows_affected == 0 {
-        return NotFound!("The tmp_user was not found")
+        return Err(NotFound!("The tmp_user was not found"))
     }
 
     if rows_affected > 1 {
-        return InternalServer!("There are two users by that id. For both has been vouched")
+        return Err(InternalServer!("There are two users by that id. For both has been vouched"))
     }
 
     return Ok(())
@@ -271,7 +270,7 @@ pub async fn create_tmp_user(db: &SqlitePool) -> Result<AuthUser, HttpResponse> 
         current_timestamp)
         .execute(db)
         .await.is_err() {
-            return InternalServer!("There was an error inserting the user into the DB")
+            return Err(InternalServer!("There was an error inserting the user into the DB"))
     }
 
     return Ok(AuthUser::NotApprovedTmpUser {id: name, api_key: key});
@@ -293,7 +292,7 @@ pub async fn create_session(db: &SqlitePool) -> Result<AuthUser, HttpResponse> {
     "#, api_key, current_timestamp, current_timestamp)
         .execute(db)
         .await {
-            return InternalServer!(format!("Error while inserting into the database ({})", e))
+            return Err(InternalServer!(format!("Error while inserting into the database ({})", e)))
     }
 
     return Ok(AuthUser::Admin {api_key})

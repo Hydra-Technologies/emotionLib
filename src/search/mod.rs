@@ -4,13 +4,8 @@ use futures::future::join_all;
 use sha256::TrySha256Digest;
 use sqlx::SqlitePool;
 use std::{collections::HashMap, path::Path};
-
-#[derive(Debug)]
-pub enum SearchError {
-    InternalError { message: String, error: String },
-    NotFound { message: String },
-    BadRequest { meassage: String },
-}
+use actix_web::HttpResponse;
+use crate::InternalServer;
 
 #[derive(Debug)]
 pub struct SchuelerResultConstructor {
@@ -23,7 +18,7 @@ pub struct SchuelerResultConstructor {
 
 pub async fn search_database(
     db: &SqlitePool,
-) -> Result<Vec<search_schema::SchuelerResult>, SearchError> {
+) -> Result<Vec<search_schema::SchuelerResult>, HttpResponse> {
     // first get all student Data from the database
     // here we get a list of the best trys of wich the medal is already calculated
     let student_data = match sqlx::query_file!("src/search/selectVersucheOfStudents.sql")
@@ -32,10 +27,7 @@ pub async fn search_database(
     {
         Ok(r) => r,
         Err(e) => {
-            return Err(SearchError::InternalError {
-                message: "There was an error getting the schueler from the Database".to_string(),
-                error: e.to_string(),
-            })
+            return Err(InternalServer!(format!("There was an error getting the schueler from the Database ({})", e)));
         }
     };
 
@@ -167,7 +159,7 @@ fn add_bjs_points(points: Vec<i64>) -> i64 {
 
 pub async fn search_database_extesive(
     db: &SqlitePool,
-) -> Result<Vec<search_schema::SchuelerResultExtensive>, SearchError> {
+) -> Result<Vec<search_schema::SchuelerResultExtensive>, HttpResponse> {
     let schueler_data = search_database(db).await?;
     Ok(join_all(
         schueler_data
