@@ -11,7 +11,7 @@ use std::string::String;
 use std::ffi::OsStr;
 use walkdir;
 use actix_web::HttpResponse;
-use crate::{InternalServer,Conflict,BadRequest};
+use crate::{InternalServer,Conflict,BadRequest,NotFound};
 use self::schema::{BjsKategorieConstructor, DosbAlterBewertung, DosbKategorieConstructor};
 
 pub async fn create_event(
