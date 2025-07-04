@@ -9,11 +9,11 @@ INNER JOIN
     -- get best Attempts of each student in each category
     (SELECT versuch.id as versuchId, MIN(wert) as wert FROM versuch -- For Sprint and Ausdauer
         INNER JOIN kategorien ON kategorieId = kategorien.id
-        WHERE kategorien.kateGroupIdDOSB IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupIdDOSB
+        WHERE kategorien.kateGroupIdDOSB IN (2, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupIdDOSB
     UNION 
     SELECT versuch.id as versuchId, MAX(wert) as wert FROM versuch -- For Sprung and Wurf/Stoß
         INNER JOIN kategorien ON kategorieId = kategorien.id
-        WHERE kategorien.kateGroupIdDOSB IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupIdDOSB) as bestTrys
+        WHERE kategorien.kateGroupIdDOSB IN (1, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.kateGroupIdDOSB) as bestTrys
 ON bestTrys.versuchId = versuch.id
 -- get the age of the student to determin the medal values
 INNER JOIN schueler ON schueler.id = versuch.schuelerId

@@ -6,6 +6,7 @@ use sqlx::SqlitePool;
 use std::{collections::HashMap, path::Path};
 use actix_web::HttpResponse;
 use crate::InternalServer;
+use log::debug;
 
 #[derive(Debug)]
 pub struct SchuelerResultConstructor {
@@ -50,6 +51,7 @@ pub async fn search_database(
                 let mut kat_groups_bjs: Vec<i64> = r.kat_groups_bjs.clone();
                 let mut kat_groups_dosb: Vec<i64> = r.kat_groups_dosb.clone();
                 kat_groups_bjs.push(versuch.kat_group_id_bjs.unwrap());
+
                 if versuch.dosb_abzeichen > 0 {
                     kat_groups_dosb.push(versuch.kat_group_id_dosb.unwrap());
                 }
@@ -93,6 +95,7 @@ pub async fn search_database(
         .fetch_all(db)
         .await
         .unwrap();
+
     // now we need to calculate the medals
     let schueler_data: Vec<search_schema::SchuelerResult> = join_all(all_schueler
         .into_iter()
@@ -133,11 +136,14 @@ pub async fn search_database(
                     search_schema::BJSUrkunde::None
                 },
                 dosb_punkte: c.dosb_punkte as i64,
-                dosb_abzeichen: if !([1, 2, 3, 4].iter().all(|g| c.kat_groups_dosb.contains(g))) { search_schema::DOSBAbzeichen::None }
+                dosb_abzeichen: {
+                    debug!("Schueler: {}, with {:?}",c.id, c.kat_groups_dosb);
+                    if !([1, 2, 3, 4].iter().all(|g| c.kat_groups_dosb.contains(g))) { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 4 { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 8  { search_schema::DOSBAbzeichen::Bronze }
                     else if c.dosb_punkte < 11  { search_schema::DOSBAbzeichen::Silber }
                     else { search_schema::DOSBAbzeichen::Gold }
+                }
             }
         })).await;
 
