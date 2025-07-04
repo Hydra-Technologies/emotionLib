@@ -41,10 +41,14 @@ fn ensure_event_impl(input: TokenStream) -> TokenStream {
                 Err(e) => return e
             };
 
-            let event_con = match data.event_cons.get(&event.id) {
-                Some(c) => c,
-                None => return HttpResponse::NotFound().into()
-            };
+            let __event_con_clone;
+            {
+                __event_con_clone = match data.event_cons.lock().unwrap().get(&event.id) {
+                    Some(c) => c.clone(),
+                    None => return HttpResponse::NotFound().into()
+                };
+            }
+            let event_con = &__event_con_clone;
 
             #(#statements)*
         }
