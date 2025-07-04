@@ -19,7 +19,7 @@ pub async fn create_event(
     vorlagen_dir: String,
     id: String,
     data: schema::EventConstructor,
-) -> Result<(), HttpResponse> {
+) -> Result<SqlitePool, HttpResponse> {
     let db_url = format!("{}{}.db", school_dir, id);
     // check if database exists
     if Sqlite::database_exists(db_url.as_str())
@@ -72,7 +72,7 @@ pub async fn create_event(
         }
     }
 
-    return Ok(());
+    return Ok(con);
 }
 
 pub fn get_vorlagen(vorlagen_path: String) -> Vec<String> {
