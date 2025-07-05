@@ -1,19 +1,3 @@
-CREATE TABLE katGroupsBJS(
-    id INT,
-    name VARCHAR(255),
-    numPflicht INT NOT NULL,
-    forEDay BOOLEAN DEFAULT true,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE katGroupsDOSB(
-    id INT,
-    name VARCHAR(255),
-    numPflicht INT NOT NULL,
-    forEDay BOOLEAN DEFAULT true,
-    PRIMARY KEY (id)
-);
-
 CREATE TABLE kategorien(
     id INTEGER,
     name VARCHAR(255),
@@ -22,29 +6,7 @@ CREATE TABLE kategorien(
     maxVers INT, 
     digits_before INT,
     digits_after INT,
-    kateGroupIdBJS INT,
-    kateGroupIdDOSB INT,
-    FOREIGN KEY (kateGroupIdBJS) REFERENCES katGroupsBJS(id),
-    FOREIGN KEY (kateGroupIdDOSB) REFERENCES katGroupsDOSB(id),
     PRIMARY KEY (id)
-);
-
-
-CREATE TABLE formVars(
-    katId INT NOT NULL,
-    gesch CHAR,
-    a DOUBLE, 
-    c DOUBLE,
-    PRIMARY KEY (katId, gesch),
-    FOREIGN KEY (katId) REFERENCES kategorien(id)
-);
-
-CREATE TABLE ageGroups(
-    age INT, 
-    gesch CHAR, 
-    gold INT, 
-    silber INT, 
-    PRIMARY KEY (age, gesch)
 );
 
 CREATE TABLE schueler(
@@ -77,49 +39,6 @@ CREATE TABLE versuch(
     FOREIGN KEY (schuelerId) REFERENCES schueler(id),
     FOREIGN KEY (kategorieId) REFERENCES kategorien(id)
 );
-
-CREATE TABLE bjsKat (
-    age INT,
-    gesch CHAR,
-    katId INT,
-    FOREIGN KEY (age, gesch) REFERENCES ageGroups(age, gesch),
-    PRIMARY KEY (age, gesch, katId)
-);
-
-CREATE TABLE dosbKat(
-    age INT,
-    gesch CHAR,
-    katId INT,
-    gold DOUBLE,
-    silber DOUBLE,
-    bronze DOUBLE,
-    FOREIGN KEY (age, gesch) REFERENCES ageGroups(age, gesch),
-    PRIMARY KEY (age, gesch, katId)
-);
-
-CREATE TABLE loginKeys(
-    aufsichtId INT,
-    token VARCHAR(512),
-    buildTime INT,
-    PRIMARY KEY (aufsichtId, token),
-    FOREIGN KEY (aufsichtId) REFERENCES schueler(id)
-);
-
-INSERT INTO katGroupsDOSB(id, name, numPflicht) VALUES
-    (1, 'Kraft', 1),
-    (2, 'Ausdauer', 1),
-    (3, 'Koordination', 1),
-    (4, 'Schnelligkeit', 1);
-
-INSERT INTO katGroupsBJS(id, name, numPflicht) VALUES
-    (1, 'Sprint', 1),
-    (2, 'Sprung', 1),
-    (3, 'Wurf/Stoß', 1),
-    (4, 'Ausdauer', 1);
-
-INSERT INTO ageGroups(age, gesch, silber, gold) VALUES
-    (-1, 'w', 625, 825),
-    (-1, 'm', 600, 775);
 
 
 -- INSERT INTO schueler(id, fName, lName, klasse, birth_year, gesch, aufsicht) VALUES ('4321', 'Brian2', 'aka Jesus', '5A', 2025, 'm', true);

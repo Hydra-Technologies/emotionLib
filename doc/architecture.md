@@ -3,49 +3,42 @@ Hier werde ich versuche eine Dokumentation über die Bibeliothek zu führen. Das
 
 Also hier ein paar Dokumente zur Unterstützung.
 # Datenbank
-Hier ist ein Diagramm mit der Datenbank struktur
-
+Es gibt insgesamt =< 4 Datenbanken. Die erste ist die Auth databank. Diese ist zum managen der User und verteilen sowie auth der tmp_user gedacht. Die Struktur ist folgendermaßen:
 ```mermaid
 erDiagram
-
-    katGroupsDOSB{
-        int id
-        string name
-        int numPflicht
-        bool forEDay
-    }
-    
-    katGroupsBJS{
-        int id
-        string name
-        int numPflicht
-        bool forEDay
+    event{
+        String id
+        String name
     }
 
+    tmp_user{
+        String id
+        String api_key
+        bool vouched
+        int time_of_creation
+        int time_of_activation
+        int last_refresh
+        String event_id
+    }
+    tmp_user }o--|| event: "ist in"
+
+    user_session{
+        String api_key
+        int time_of_creation
+        int last_refresh
+    }
+```
+
+Events werden in einzelnen Dateien mit einer SQLite datenbank gespeichert. Das macht sie sehr Protable und gibt die möglichkeit sie einfach zu importieren, bzw. exportieren.
+```mermaid
+erDiagram
     kategorien{
         int id
         string name
         char einheit
-        bool lauf
-        int maxVers
+        int maxVerscategory
         int digits_before
         int digits_after
-        int kateGroupIdDOSB
-        int kateGroupIdBJS
-    }
-
-    formVars{
-        int katId
-        char gesch
-        double a
-        double c
-    }
-
-    ageGroups{
-        int age
-        char gesch
-        int gold
-        int silber
     }
 
     schueler{
@@ -72,42 +65,67 @@ erDiagram
         int mTime
         bool isReal
     }
-
-    dosbKat{
-        int age
-        char gesch
-        int katId
-        double gold
-        double silber
-        double bronze
-    }
-
-    loginKeys{
-        int aufsichtId
-        string token
-        int buildTime
-    }
-
-    kategorien }o--|| katGroupsDOSB : "ist in"
-    kategorien }o--|| katGroupsBJS : "ist in"
-    formVars }|..|| kategorien : "hat"
-    schueler }o--|| ageGroups : "ist"
-    versuch }o..|| schueler : versucht
-    versuch }o--|| kategorien : "ist in" 
-    ageGroups }o--o{ kategorien : "braucht für bjs"
-    dosbKat }o--|| ageGroups : "hat"
-    dosbKat }o--|| kategorien : "hat"
-    loginKeys }o..|| schueler : "besitzt"
 ```
 
-Die n:m Verbindung "braucht für bjs" wurde mit folgender Relation umgesetzt:
+Die Auswertung ist unabhängig von dem Event. Deswegen gibt es dafür 2 extra Datenbanken. Eine für DOSB und eine für BJS. Diese können für verschiedene Jahre ausgetauscht werden. Dadurch kann man verschiedene Event mit verschiedenen Jahren auswerten. Die Struktur für BJS ist folgender maßen:
+
 ```mermaid
 erDiagram
-    bjsKat{
-        int age
-        char gesch
-        int katId
+    category {
+        int id
+        int group
+        bool lauf
     }
+    category_group {
+        int id
+        String name
+    }
+    mand_category {
+        int age
+        char gender
+        int category_id
+    }
+    form_vars {
+        int age
+        char gender
+        int category_id
+        double a
+        double c
+    }
+    points_eval {
+        int age
+        ing gender
+        int winner
+        int honor
+    }
+    category }o..|| category_group: "ist in" 
+    category }o..|| form_vars: "hat" 
+    mand_category }o..|| category: braucht
+```
+
+Die DOSB Datenbank struktur sieht so aus:
+
+```mermaid
+erDiagram
+    category {
+        int id
+        int group
+        bool lauf
+    }
+    category_group {
+        int id
+        String name
+    }
+    mand_category {
+        int age
+        char gender
+        int category_id
+        double gold
+        double silver
+        double bronze
+    }
+    category }o..|| category_group: "ist in" 
+    mand_category }o..|| category: braucht
 ```
 
 # Main
