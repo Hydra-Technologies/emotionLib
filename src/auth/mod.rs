@@ -1,11 +1,15 @@
 //! Here is all we need for authentication
 //! 
 //! The main idea is to set a macro for a endpoint like:
-//! ```rust
-//! #[route(GET, "/")]
-//! #[ensure_event]
-//! pub async fn addEventCategory() { ... }
 //! ```
+//! use actix_web::{HttpRequest,HttpResponse};
+//! //#[ensure_user] // uncomment this
+//! pub async fn addEventCategory(req: HttpRequest, data: i64) -> HttpResponse{
+//!     HttpResponse::Ok().into()
+//! }
+//! ```
+//! Instead of the data int ther has to be a struct with a attribute named db with a SqlitePool
+//!
 //!
 //! This should enforce that the user is a Admin, as well as a user varible, also it should expose
 //! the event Varible
@@ -14,7 +18,6 @@ use crate::{Forbidden,NotFound,InternalServer, BadRequest, Unauthorized};
 use sqlx::SqlitePool;
 use actix_web::{HttpRequest, HttpResponse};
 use sha256::digest;
-use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 use rand::prelude::*;
 use log::info;
