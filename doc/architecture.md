@@ -73,7 +73,7 @@ Die Auswertung ist unabhängig von dem Event. Deswegen gibt es dafür 2 extra Da
 erDiagram
     category {
         int id
-        int group
+        int category_group_id
         bool lauf
     }
     category_group {
@@ -109,13 +109,15 @@ Die DOSB Datenbank struktur sieht so aus:
 erDiagram
     category {
         int id
-        int group
+        int category_group_id
         bool lauf
     }
+
     category_group {
         int id
         String name
     }
+
     mand_category {
         int age
         char gender
@@ -142,7 +144,6 @@ Diese werden für den Upload von Schuelern, Daten von Schuelern abrufen und Info
 + get_top_versuch_in_bjs
 + get_top_versuch_in_dosb
 + get_bjs_kat_groups
-+ need_kat
 + add_versuch
 + get_versuch_by_id
 + set_is_real

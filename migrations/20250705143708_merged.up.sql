@@ -21,8 +21,7 @@ CREATE TABLE schueler(
     aufsicht boolean, 
     llTime INT,
     llkey VARCHAR(255),
-    PRIMARY KEY(id), 
-    FOREIGN KEY (age, gesch) REFERENCES ageGroups(age, gesch)
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE versuch(
@@ -65,7 +64,7 @@ CREATE TABLE user_session (
 
 CREATE TABLE category(
     id INT PRIMARY KEY NOT NULL,
-    group_id INT NOT NULL
+    category_group_id INT NOT NULL
 );
 
 CREATE TABLE category_group(
@@ -77,9 +76,9 @@ CREATE TABLE mand_category(
     age INT NOT NULL,
     gender CHAR NOT NULL,
     category_id INT NOT NULL,
-    gold INT,
-    silver INT,
-    bronze INT
+    gold DOUBLE NOT NULL,
+    silver DOUBLE NOT NULL,
+    bronze DOUBLE NOT NULL
 );
 
 CREATE TABLE form_vars(

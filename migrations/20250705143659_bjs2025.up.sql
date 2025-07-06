@@ -1,6 +1,7 @@
 CREATE TABLE category(
     id INT PRIMARY KEY NOT NULL,
-    group INT NOT NULL
+    category_group_id INT NOT NULL
+    running BOOLEAN,
 );
 
 CREATE TABLE category_group(

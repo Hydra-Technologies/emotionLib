@@ -1,5 +1,5 @@
-use crate::search::search_schema::DOSBAbzeichen;
 use serde::{Deserialize, Serialize};
+use crate::dosb_eval::*;
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct SimpleSchueler {

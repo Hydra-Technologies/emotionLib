@@ -1,6 +1,18 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+pub struct Attempt {
+    pub category: i64,
+    pub result: f64
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+pub struct Category {
+    pub id: i64,
+    pub group_id: i64
+}
+
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct SimpleSchueler {
     pub id: Option<i64>,
     pub first_name: Option<String>,
@@ -59,12 +71,10 @@ pub struct KatId {
 pub struct Kategorie {
     pub id: Option<i64>,
     pub name: Option<String>,
-    pub lauf: Option<bool>,
     pub einheit: Option<String>,
     pub max_vers: Option<i64>,
     pub digits_before: Option<i64>,
     pub digits_after: Option<i64>,
-    pub kat_group_id: Option<i64>,
 }
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct NeedsKat {

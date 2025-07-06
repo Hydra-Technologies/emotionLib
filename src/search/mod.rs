@@ -5,8 +5,8 @@ use sha256::TrySha256Digest;
 use sqlx::SqlitePool;
 use std::{collections::HashMap, path::Path};
 use actix_web::HttpResponse;
+use crate::dosbEval::DOSBAbzeichen;
 use crate::InternalServer;
-use log::debug;
 
 #[derive(Debug)]
 pub struct SchuelerResultConstructor {
@@ -137,7 +137,6 @@ pub async fn search_database(
                 },
                 dosb_punkte: c.dosb_punkte as i64,
                 dosb_abzeichen: {
-                    debug!("Schueler: {}, with {:?}",c.id, c.kat_groups_dosb);
                     if !([1, 2, 3, 4].iter().all(|g| c.kat_groups_dosb.contains(g))) { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 4 { search_schema::DOSBAbzeichen::None }
                     else if c.dosb_punkte < 8  { search_schema::DOSBAbzeichen::Bronze }

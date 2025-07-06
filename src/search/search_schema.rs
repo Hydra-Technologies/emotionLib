@@ -20,13 +20,6 @@ pub enum BJSUrkunde {
     None,
 }
 
-#[derive(Debug, Serialize)]
-pub enum DOSBAbzeichen {
-    Bronze,
-    Silber,
-    Gold,
-    None,
-}
 
 pub struct Filter {
     pub bjs: Option<Vec<BJSUrkunde>>,
