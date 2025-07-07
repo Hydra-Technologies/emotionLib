@@ -41,6 +41,7 @@ pub struct AltersklassenConstructor {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Kategorie {
+    pub id: i64,
     pub name: String,
     pub einheit: String,
     pub kat_groupBJS: i8,

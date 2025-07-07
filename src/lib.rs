@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::SqlitePool;
 pub use emotion_lib_derive as macros;
 
-// pub mod manage;
+pub mod manage;
 pub mod search;
 pub mod auth;
 mod model;
