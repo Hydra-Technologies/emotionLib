@@ -1,4 +1,7 @@
 use serde::Serialize;
+use crate::dosb_eval::DOSBAbzeichen;
+use crate::bjs_eval::BJSAbzeichen;
+use crate::model::Attempt;
 
 pub enum SortKategorien {
     Age,
@@ -12,17 +15,9 @@ pub enum SearchKategorien {
     Name,
 }
 
-#[derive(Debug, Serialize)]
-pub enum BJSUrkunde {
-    Teilnehmer,
-    Sieger,
-    Ehren,
-    None,
-}
-
 
 pub struct Filter {
-    pub bjs: Option<Vec<BJSUrkunde>>,
+    pub bjs: Option<Vec<BJSAbzeichen>>,
     pub dosb: Option<Vec<DOSBAbzeichen>>,
 }
 
@@ -35,16 +30,10 @@ pub struct SearchTerm {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SingleResult {
-    pub kategorie_id: i64,
-    pub wert: f64,
-}
-
-#[derive(Debug, Serialize)]
 pub struct SchuelerResult {
     pub id: i64,
     pub bjs_punkte: i64,
-    pub bjs_urkunde: BJSUrkunde,
+    pub bjs_urkunde: BJSAbzeichen,
     pub dosb_punkte: i64,
     pub dosb_abzeichen: DOSBAbzeichen,
 }
@@ -52,8 +41,8 @@ pub struct SchuelerResult {
 pub struct SchuelerResultExtensive {
     pub id: i64,
     pub bjs_punkte: i64,
-    pub bjs_urkunde: BJSUrkunde,
+    pub bjs_urkunde: BJSAbzeichen,
     pub dosb_punkte: i64,
     pub dosb_abzeichen: DOSBAbzeichen,
-    pub single_results: Vec<SingleResult>,
+    pub single_results: Vec<Attempt>,
 }

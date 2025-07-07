@@ -24,7 +24,7 @@ pub struct UploadSchueler {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct NormVersuch {
+pub struct NormVersuchBJS {
     pub id: i64,
     pub schueler_id: i64,
     pub kategorie_id: i64,
@@ -40,7 +40,6 @@ pub struct NormVersuchDosb {
     pub schueler_id: i64,
     pub kategorie_id: i64,
     pub wert: f64,
-    pub punkte: i64,
     pub dosb: DOSBAbzeichen,
     pub ts_recording: i64,
     pub is_real: bool,

@@ -16,12 +16,12 @@ pub enum DOSBAbzeichen {
     Gold = 3,
 }
 
-struct DosbEvaluator<'a> {
-    db: &'a SqlitePool
+pub struct DOSBEvaluator<'a> {
+    pub db: &'a SqlitePool
 }
-impl DosbEvaluator<'_> {
+impl DOSBEvaluator<'_> {
 
-    async fn get_needed_categorys(&self, age: i64, gender: char) -> Result<Vec<Category>, HttpResponse> {
+    pub async fn get_needed_categorys(&self, age: i64, gender: char) -> Result<Vec<Category>, HttpResponse> {
         let gender_string = gender.to_string();
         return match sqlx::query_as!(Category, r#"
             SELECT category_id as id, category_group_id as group_id FROM mand_category
@@ -152,18 +152,7 @@ impl DosbEvaluator<'_> {
             return Ok(DOSBAbzeichen::Gold)
         }
     }
-
-    pub async fn get_medal(&self, age: i64, gender: char, attempts: Vec<Attempt>) -> Result<DOSBAbzeichen,HttpResponse> {
-        let done_categories = attempts.iter().map(|a| a.category).collect();
-        let missing_by_group= self.get_missing_categorys(age, gender, done_categories).await?;
-        if     missing_by_group[0].len() > 0 
-            || missing_by_group[1].len() > 0 
-            || missing_by_group[2].len() > 0 
-            || missing_by_group[3].len() > 0 {
-            debug!("There are still some categories missing"); 
-            return Ok(DOSBAbzeichen::None);
-        }
-
+    pub async fn calculate_points(&self, age: i64, gender: char, attempts: Vec<Attempt>) -> Result<u8,HttpResponse> {
         let top_attempts = self.get_top_attempts(age, gender, attempts).await?;
 
         // get category group
@@ -187,16 +176,27 @@ impl DosbEvaluator<'_> {
             }
         }
 
-        println!("Attemps: {:#?}", attemps_with_group);
-
-
         // add the medals 
         let mut medal_sum = 0;
         for att in attemps_with_group.into_iter().map(|c| c.1.1) {
             medal_sum += att as u8;
         }
 
-        println!("Sum: {}", medal_sum);
+        return Ok(medal_sum);
+    }
+
+    pub async fn get_medal(&self, age: i64, gender: char, attempts: Vec<Attempt>) -> Result<DOSBAbzeichen,HttpResponse> {
+        let done_categories = attempts.iter().map(|a| a.category).collect();
+        let missing_by_group= self.get_missing_categorys(age, gender, done_categories).await?;
+        if     missing_by_group[0].len() > 0 
+            || missing_by_group[1].len() > 0 
+            || missing_by_group[2].len() > 0 
+            || missing_by_group[3].len() > 0 {
+            debug!("There are still some categories missing"); 
+            return Ok(DOSBAbzeichen::None);
+        }
+
+        let medal_sum = self.calculate_points(age, gender, attempts).await?;
 
         return if medal_sum < 4 {
             Ok(DOSBAbzeichen::None)
@@ -219,7 +219,7 @@ mod tests {
     #[sqlx::test]
     async fn schueler_5716_2025() {
         // create evaluator
-        let eval = DosbEvaluator {
+        let eval = DOSBEvaluator {
             db: &SqlitePool::connect("testData/2025dosb.db").await.unwrap()
         };
 
@@ -276,7 +276,7 @@ mod tests {
     #[sqlx::test]
     async fn schueler_5243_2025() {
         // create evaluator
-        let eval = DosbEvaluator {
+        let eval = DOSBEvaluator {
             db: &SqlitePool::connect("testData/2025dosb.db").await.unwrap()
         };
 
@@ -349,7 +349,7 @@ mod tests {
     #[sqlx::test]
     async fn category_group_missing() {
         // create evaluator
-        let eval = DosbEvaluator {
+        let eval = DOSBEvaluator {
             db: &SqlitePool::connect("testData/2025dosb.db").await.unwrap()
         };
 

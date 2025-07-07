@@ -1,23 +1,15 @@
 use serde::{Deserialize, Serialize};
 use sqlx::sqlite::SqlitePool;
 pub use emotion_lib_derive as macros;
-pub mod manage;
-mod model;
-pub mod schema;
+
+// pub mod manage;
 pub mod search;
 pub mod auth;
+mod model;
+ pub mod schema;
 #[macro_use]
 pub mod http_res;
-
-// not_now_TODO write class with all the Functions (but not today)
-pub struct EmotionCon {
-    pub database: SqlitePool,
-}
-impl EmotionCon {
-    /*async fn get_schueler(self, id: &i32) -> Result<schema::SimpleSchueler, i32> {
-        interact::get_schueler(id, &self.database).await
-    }*/
-}
+pub mod dosb_eval; pub mod bjs_eval;
 
 #[derive(Serialize, Deserialize)]
 pub struct UploadSchuelerResult {
@@ -29,104 +21,100 @@ pub struct UploadSchuelerResult {
 }
 
 pub mod interact {
+    use crate::dosb_eval::DOSBEvaluator;
+    use crate::bjs_eval::BJSEvaluator;
     use crate::model;
     use crate::schema;
-    use crate::search;
+    use crate::model::Attempt;
     use crate::UploadSchuelerResult;
+    use crate::search::search_schema;
+    use crate::search::result2extensive;
+
     use regex::Regex;
     use sqlx::SqlitePool;
     use std::string::String;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use actix_web::HttpResponse;
+
+    async fn get_attempts(id: i64, db: &SqlitePool) -> Result<Vec<Attempt>,HttpResponse>{
+        // get all attempts of the student
+        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ?", id).fetch_all(db).await {
+            Ok(r) => r,
+            Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, id))
+        };
+
+        let attempts: Vec<Attempt> = attempts_rec.into_iter().map(|a| Attempt {
+            category: a.category,
+            result: a.result
+        }).collect();
+
+        return Ok(attempts);
+    }
+    async fn get_schueler_data(id: i64, db: &SqlitePool) -> Result<(i64, char), HttpResponse> {
+        let schueler = match sqlx::query!("SELECT age, gesch FROM schueler WHERE id = ?" ,id).fetch_one(db).await {
+            Ok(r) => r,
+            Err(sqlx::Error::RowNotFound) => return Err(NotFoundf!("The Student {} was not found in the Database", id)),
+            Err(e) => return Err(InternalServerf!("There was an Error gettin the student from the database: {}", e))
+        };
+
+        Ok((schueler.age.unwrap(), schueler.gesch.unwrap().chars().nth(0).unwrap()))
+    }
 
     pub async fn get_schueler(
         id: &i32,
         db: &SqlitePool,
-    ) -> Result<search::search_schema::SchuelerResultExtensive, i32> {
-        if !check_schueler_id(&id) {
-            return Err(400);
-        }
-
-        let all_students = match search::search_database_extesive(db).await {
-            Ok(s) => s,
-            Err(_e) => return Err(500),
+        dosb_db: &SqlitePool,
+        bjs_db: &SqlitePool,
+    ) -> Result<search_schema::SchuelerResultExtensive, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+        // now we calculate the medals
+        let dosb_evaluator = DOSBEvaluator {
+            db: dosb_db
         };
 
-        return match all_students.into_iter().find(|s| s.id == id.clone() as i64) {
-            Some(s) => Ok(s),
-            None => Err(404),
+        let bjs_evaluator= BJSEvaluator {
+            db: bjs_db 
         };
+
+        Ok(result2extensive(search_schema::SchuelerResult {
+                id: id.clone() as i64,
+                bjs_punkte: bjs_evaluator.calculate_points_sum(age, gender, attempts.clone()).await?,
+                bjs_urkunde: bjs_evaluator.get_medal(age,gender,attempts.clone()).await?,
+                dosb_punkte: dosb_evaluator.calculate_points(age, gender, attempts.clone()).await? as i64,
+                dosb_abzeichen: dosb_evaluator.get_medal(age,gender,attempts).await?
+            },
+            db,
+            dosb_db,
+            bjs_db
+        ).await?)
+
     }
 
     pub async fn get_dosb_task_for_schueler(
         id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::PflichtKategorie>, i32> {
-        if !check_schueler_id(&id) {
-            return Err(400);
-        }
-        let query_response =
-            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupIdDOSB as group_id FROM kategorien
-    INNER JOIN dosbKat b ON b.katId = kategorien.id
-    INNER JOIN katGroupsDOSB ON kategorien.kateGroupIdDOSB = katGroupsDOSB.id
-    INNER JOIN schueler ON schueler.age = b.age AND schueler.gesch = b.gesch
-    LEFT JOIN versuch ON schueler.id = versuch.schuelerId AND kategorien.id = versuch.kategorieId AND versuch.isReal
-    WHERE schueler.id = ? ORDER BY kategorien.kateGroupIdDOSB;"#, id)
-                .fetch_all(db)
-                .await;
-
-        return if query_response.iter().len() == 0 {
-            Err(404)
-        } else {
-            match query_response {
-                Ok(kategorien) => {
-                    let note_responses = kategorien
-                        .into_iter()
-                        .map(|kategorie| pflicht_kat_model2schema(kategorie))
-                        .collect::<Vec<schema::PflichtKategorie>>();
-                    Ok(note_responses)
-                }
-                Err(e) => {
-                    print!("{}", e);
-                    Err(500)
-                }
-            }
+        dosb_db: &SqlitePool
+    ) -> Result<Vec<Vec<i64>>, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+        let dosb_evaluator = DOSBEvaluator {
+            db: dosb_db
         };
+        return dosb_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await
     }
 
     pub async fn get_bjs_task_for_schueler(
         id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::PflichtKategorie>, i32> {
-        if !check_schueler_id(&id) {
-            return Err(400);
-        }
-        let query_response =
-            sqlx::query_as!(model::PflichtKategorie, r#"SELECT DISTINCT kategorien.id as id, (versuch.kategorieId IS NOT NULL) AS done, kategorien.kateGroupIdBJS as group_id FROM kategorien
-    INNER JOIN bjsKat b ON b.katId = kategorien.id
-    INNER JOIN katGroupsBJS ON kategorien.kateGroupIdBJS = katGroupsBJS.id
-    INNER JOIN schueler ON schueler.age = b.age AND schueler.gesch = b.gesch
-    LEFT JOIN versuch ON schueler.id = versuch.schuelerId AND kategorien.id = versuch.kategorieId AND versuch.isReal
-    WHERE schueler.id = ? ORDER BY kategorien.kateGroupIdBJS;"#, id)
-                .fetch_all(db)
-                .await;
-
-        return if query_response.iter().len() == 0 {
-            Err(404)
-        } else {
-            match query_response {
-                Ok(kategorien) => {
-                    let note_responses = kategorien
-                        .into_iter()
-                        .map(|kategorie| pflicht_kat_model2schema(kategorie))
-                        .collect::<Vec<schema::PflichtKategorie>>();
-                    Ok(note_responses)
-                }
-                Err(e) => {
-                    print!("{}", e);
-                    Err(500)
-                }
-            }
+        bjs_db: &SqlitePool,
+    ) -> Result<Vec<Vec<i64>>, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+        let bjs_evaluator = DOSBEvaluator {
+            db: bjs_db 
         };
+        return bjs_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await
     }
 
     pub async fn upload_schueler(
@@ -209,252 +197,186 @@ pub mod interact {
         id: i32,
         kat_id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::NormVersuch>, i32> {
-        let versuch_result = sqlx::query_as!(model::NormVersuch, r#"
-    SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, mTime as ts_recording, isReal as is_real FROM versuch WHERE schuelerId = ? AND kategorieId = ?
-    "#, id, kat_id).fetch_all(db).await;
-
-        let versuche = match versuch_result {
-            Ok(v) => v,
-            Err(_e) => return Err(500),
+    ) -> Result<Vec<model::NormVersuch>, HttpResponse> {
+        return match sqlx::query_as!(model::NormVersuch, "SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch WHERE schuelerId = ? AND kategorieId = ?", id, kat_id).fetch_all(db).await {
+            Ok(r) => Ok(r),
+            Err(e) => Err(InternalServerf!("There was an error with the query {}",e))
         };
-
-        Ok(
-            futures::future::join_all(versuche.into_iter().map(|v| calc_norm_versuch(v, &db)))
-                .await,
-        )
     }
 
     pub async fn get_top_versuch_by_kat(
         id: i32,
         kat_id: i32,
         db: &SqlitePool,
-    ) -> Result<schema::NormVersuch, i32> {
-        let all_versuche_result = sqlx::query_as!(model::NormVersuch, r#"
-        SELECT * FROM (
-        SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MIN(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprint and Ausdauer
-            INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupIdBJS IN (1, 4) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
-        UNION 
-        SELECT versuch.id as id, schuelerId as schueler_id, kategorieId as kategorie_id, MAX(wert) as wert, mTime as ts_recording, isReal as is_real FROM versuch -- For Sprung and Wurf/Stoß
-            INNER JOIN kategorien ON kategorieId = kategorien.id
-            WHERE kategorien.kateGroupIdBJS IN (2, 3) AND isReal = true GROUP BY versuch.schuelerId, kategorien.id
-        ) WHERE schueler_id = ? AND kategorie_id = ?
-        "#, id, kat_id).fetch_one(db).await;
-
-        let all_versuche_model = match all_versuche_result {
+        dosb_db: &SqlitePool,
+        bjs_db: &SqlitePool,
+    ) -> Result<model::NormVersuch, HttpResponse> {
+        // get all attempts of the student
+        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? AND kategorieId = ?", id, kat_id).fetch_all(db).await {
             Ok(r) => r,
-            Err(_e) => return Err(404),
+            Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, id))
         };
 
-        Ok(calc_norm_versuch(all_versuche_model, db).await)
+        let attempts: Vec<Attempt> = attempts_rec.into_iter().map(|a| Attempt {
+            category: a.category,
+            result: a.result
+        }).collect();
+
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+
+        // get the top results of dosb
+        let dosb_evaluator = DOSBEvaluator {
+            db: dosb_db
+        };
+        let top_dosb = dosb_evaluator.get_top_attempts(age, gender,attempts.clone()).await?;
+
+        // get the top results of bjs
+        let bjs_evaluator = BJSEvaluator {
+            db: bjs_db 
+        };
+        let top_bjs = bjs_evaluator.get_top_attempts(age, gender,attempts.clone()).await?;
+
+        // now we join them without creating duplicates
+        if top_dosb.len() == 0 && top_dosb.len() == 0 {
+            return Err(Conflictf!("The category {} is not required for students with this age and gender", kat_id));
+        }
+
+        let att = if top_dosb.len() > 0 {
+            top_dosb[0]
+        } else {
+            top_bjs[0]
+        };
+
+        // becaus i didnt carry the id of thes attempts through all of this I need to map them to
+        // the corresponding versuch id in the database.
+        let v = match sqlx::query_as!(model::NormVersuch, r#"
+        SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch 
+        WHERE schuelerId = ? AND kategorieId = ? AND wert = ?"#, 
+        id, att.category, att.result).fetch_one(db).await {
+            Ok(r) => r,
+            Err(e) => return Err(InternalServerf!("Error while rematching the attemts {}" ,e))
+        };
+        return Ok(v);
     }
 
     pub async fn get_top_versuch_in_bjs(
         id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::NormVersuch>, i32> {
-        let kat_list_result = sqlx::query_as!(
-            model::KatId,
-            r#"
-        SELECT katId as id FROM bjsKat
-        INNER JOIN schueler ON schueler.age = bjsKat.age AND schueler.gesch = bjsKat.gesch
-        WHERE schueler.id = ?
-        "#,
-            id
-        )
-        .fetch_all(db)
-        .await;
+        bjs_db: &SqlitePool,
+    ) -> Result<Vec<schema::NormVersuchBJS>, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
 
-        let kat_list = match kat_list_result {
-            Ok(r) => r,
-            Err(_e) => return Err(500),
+        let bjs_evaluator= BJSEvaluator {
+            db: bjs_db 
         };
 
-        // get max and min for each
-        let mut top_list: Vec<schema::NormVersuch> = Vec::new();
-        for kat in kat_list {
-            let top = get_top_versuch_by_kat(id, kat.id.unwrap() as i32, db).await;
-            if top.is_ok() {
-                top_list.push(top.unwrap());
-            }
-        }
-        Ok(top_list)
-    }
-    /*
-        pub async fn get_top_by_schueler(id: i32, db: &SqlitePool) {
-            let possible_schueler_kat = sqlx::query!(
-                "
-            SELECT DISTINCT katId as kat_id FROM schueler
-            INNER JOIN (
-                SELECT age, gesch, katId FROM bjsKat
-                UNION
-                SELECT age, gesch, katId FROM dosbKat
-            ) as kat ON kat.age = schueler.age  AND kat.gesch = schueler.gesch
-            WHERE schueler.id = ?;
-                ",
-                id
-            )
-            .fetch_all(db)
-            .await
-            .unwrap();
+        let top_bjs_attemtps = bjs_evaluator.get_top_attempts(age, gender, attempts).await?;
 
-            let all_results:  = futures::join!(possible_schueler_kat
-                .into_iter()
-                .map(|i| async {
-                    let vers = get_top_versuch_by_kat(id, i.kat_id.clone().unwrap() as i32, db).await;
-                })
-                .collect());
+        let mut top_bjs_norm = vec![];
+        for att in top_bjs_attemtps {
+            let v = match sqlx::query_as!(model::NormVersuch, r#"
+            SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch 
+            WHERE schuelerId = ? AND kategorieId = ? AND wert = ?"#, 
+            id, att.category, att.result).fetch_one(db).await {
+                Ok(r) => r,
+                Err(e) => return Err(InternalServerf!("Error while rematching the attemts {}" ,e))
+            };
+
+            top_bjs_norm.push(v);
         }
-    */
+
+        let mut top_bjs_result = vec![];
+        for att in top_bjs_norm {
+            top_bjs_result.push(schema::NormVersuchBJS {
+                id: att.id,
+                schueler_id: att.schueler_id,
+                kategorie_id: att.kategorie_id,
+                wert: att.wert,
+                punkte: bjs_evaluator.calculate_points(gender, &Attempt { category:  att.kategorie_id, result: att.wert }).await?,
+                ts_recording: att.ts_recording,
+                is_real: att.is_real
+            });
+        }
+
+        return Ok(top_bjs_result);
+    }
+
     pub async fn get_top_versuch_in_dosb(
         id: i32,
         db: &SqlitePool,
-    ) -> Result<Vec<schema::NormVersuchDosb>, i32> {
-        let kat_list_result = sqlx::query_as!(
-            model::KatId,
-            r#"
-        SELECT katId as id FROM dosbKat
-        INNER JOIN schueler ON schueler.age = dosbKat.age AND schueler.gesch = dosbKat.gesch
-        WHERE schueler.id = ?
-        "#,
-            id
-        )
-        .fetch_all(db)
-        .await;
+        dosb_db: &SqlitePool,
+    ) -> Result<Vec<schema::NormVersuchDosb>, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
 
-        let kat_list = match kat_list_result {
-            Ok(r) => r,
-            Err(_e) => return Err(500),
+        let dosb_evaluator= DOSBEvaluator {
+            db: dosb_db 
         };
 
-        // get max and min for each
-        let mut top_list: Vec<schema::NormVersuch> = Vec::new();
-        for kat in kat_list {
-            let top = get_top_versuch_by_kat(id, kat.id.unwrap() as i32, db).await;
-            if top.is_ok() {
-                top_list.push(top.unwrap());
-            }
+        let top_dosb_attemtps = dosb_evaluator.get_top_attempts(age, gender, attempts).await?;
+
+        let mut top_dosb_norm = vec![];
+        for att in top_dosb_attemtps {
+            let v = match sqlx::query_as!(model::NormVersuch, r#"
+            SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch 
+            WHERE schuelerId = ? AND kategorieId = ? AND wert = ?"#, 
+            id, att.category, att.result).fetch_one(db).await {
+                Ok(r) => r,
+                Err(e) => return Err(InternalServerf!("Error while rematching the attemts {}" ,e))
+            };
+
+            top_dosb_norm.push(v);
         }
-
-        let mut top_with_dosb: Vec<schema::NormVersuchDosb> = Vec::new();
-
-        for kat in top_list {
-            top_with_dosb.push(schema::NormVersuchDosb {
-                id: kat.id,
-                schueler_id: kat.schueler_id,
-                kategorie_id: kat.kategorie_id,
-                wert: kat.wert,
-                punkte: kat.punkte,
-                dosb: get_medal(
-                    schema::SimpleVersuch {
-                        schueler_id: kat.schueler_id as i32,
-                        wert: kat.wert as f32,
-                        kategorie_id: kat.kategorie_id as i32,
-                    },
-                    db,
-                )
-                .await,
-                ts_recording: kat.ts_recording,
-                is_real: kat.is_real,
+        
+        let mut top_dosb_result = vec![];
+        for att in top_dosb_norm {
+            top_dosb_result.push(schema::NormVersuchDosb {
+                id: att.id,
+                schueler_id: att.schueler_id,
+                kategorie_id: att.kategorie_id,
+                wert: att.wert,
+                dosb: dosb_evaluator.get_medal_for_attempt(age, gender, &Attempt { category:  att.kategorie_id, result: att.wert }).await?,
+                ts_recording: att.ts_recording,
+                is_real: att.is_real
             })
         }
-
-        Ok(top_with_dosb)
+        return Ok(top_dosb_result);
     }
 
-    pub async fn get_bjs_kat_groups(id: i32, db: &SqlitePool) -> Vec<Vec<i32>> {
-        let mut result: Vec<Vec<i32>> = Vec::new();
+    pub async fn get_bjs_points(id: i32, db: &SqlitePool, bjs_db: &SqlitePool) -> Result<i32, HttpResponse> {
+        let attempts = get_attempts(id.clone() as i64, db).await?;
+        let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
 
-        let query_result = sqlx::query_as!(
-            model::KatGroup,
-            r#"
-        SELECT katId as id, kateGroupIdBJS as group_id FROM bjsKat
-        INNER JOIN schueler ON schueler.age = bjsKat.age AND schueler.gesch = bjsKat.gesch
-        INNER JOIN kategorien ON kategorien.id = katId
-        WHERE schueler.id = ? ORDER BY kateGroupIdBJS
-        "#,
-            id
-        )
-        .fetch_all(db)
-        .await
-        .unwrap();
-
-        let mut last_group_id: i32 = -1;
-        let mut current_group: Vec<i32> = Vec::new();
-
-        for k in query_result {
-            if k.group_id.unwrap() as i32 != last_group_id {
-                if !current_group.is_empty() {
-                    result.push(current_group);
-                    current_group = Vec::new();
-                }
-                last_group_id = k.group_id.unwrap() as i32;
-            }
-            current_group.push(k.id.unwrap() as i32);
-        }
-        result.push(current_group);
-
-        return result;
-    }
-
-    pub async fn get_bjs_points(id: i32, db: &SqlitePool) -> Result<i32, i32> {
-        let kat_groups = get_bjs_kat_groups(id, db).await;
-        let versuche = get_top_versuch_in_bjs(id, db).await?;
-
-        if versuche.is_empty() {
-            return Ok(0);
-        }
-
-        let mut result_vec: Vec<i32> = Vec::new();
-        let mut tmp_points: i32 = 0;
-
-        for g in kat_groups {
-            for v in versuche.to_owned() {
-                if g.contains(&(v.kategorie_id as i32)) && v.punkte > tmp_points as i64 {
-                    tmp_points = v.punkte as i32;
-                }
-            }
-            result_vec.push(tmp_points);
-            tmp_points = 0;
-        }
-        result_vec.sort();
-        let mut lowest = 0;
-        if result_vec.len() >= 4 {
-            lowest = result_vec.first().unwrap().to_owned();
-        }
-        Ok((result_vec.into_iter().sum::<i32>()) - lowest)
+        // get the top results of bjs
+        let bjs_evaluator= BJSEvaluator {
+            db: bjs_db 
+        };
+        return Ok(bjs_evaluator.calculate_points_sum(age, gender, attempts).await? as i32);
     }
 
     pub async fn needs_kat(
         schueler_id: i32,
         kategorie_id: i32,
         db: &SqlitePool,
-    ) -> Result<schema::NeedsKat, i32> {
-        let dosb_result = sqlx::query_as!(model::NeedsKat, r#"
-        SELECT (dosbKat.gesch NOT NULL) as need FROM schueler
-        LEFT JOIN dosbKat ON schueler.gesch = dosbKat.gesch AND dosbKat.age = schueler.age AND dosbKat.katId = ?
-        WHERE schueler.id = ?
-        "#, kategorie_id, schueler_id).fetch_one(db).await;
-        let dosb = match dosb_result {
-            Ok(r) => r,
-            Err(_e) => return Err(404),
+        dosb_db: &SqlitePool,
+        bjs_db: &SqlitePool
+    ) -> Result<schema::NeedsKat, HttpResponse> {
+        let (age, gender) = get_schueler_data(schueler_id.clone() as i64, db).await?;
+
+        let bjs_evaluator= BJSEvaluator {
+            db: bjs_db 
+        };
+        let dosb_evaluator= DOSBEvaluator {
+            db: dosb_db 
         };
 
-        let bjs_result = sqlx::query_as!(model::NeedsKat, r#"
-        SELECT (bjsKat.gesch NOT NULL) as need FROM schueler
-        LEFT JOIN bjsKat ON schueler.gesch = bjsKat.gesch AND bjsKat.age = schueler.age AND bjsKat.katId = ?
-        WHERE schueler.id = ?
-        "#, kategorie_id, schueler_id).fetch_one(db).await;
-        let bjs = match bjs_result {
-            Ok(r) => r,
-            Err(_e) => return Err(404),
-        };
-
-        Ok(schema::NeedsKat {
-            dosb: dosb.need != 0,
-            bjs: bjs.need != 0,
-        })
+        let needed_dosb: Vec<i32> = dosb_evaluator.get_needed_categorys(age,gender).await?.iter().map(|k| k.id as i32).collect();
+        let needed_bjs: Vec<i32> = bjs_evaluator.get_needed_categorys(age,gender).await?.iter().map(|k| k.id as i32).collect();
+        return Ok(schema::NeedsKat {
+            dosb: needed_dosb.contains(&kategorie_id),
+            bjs: needed_bjs.contains(&kategorie_id)
+        });
     }
 
     pub async fn add_versuch(
@@ -481,16 +403,6 @@ pub mod interact {
             .fetch_one(db).await.unwrap();
 
         return Ok(v.id.unwrap() as i32);
-    }
-
-    pub async fn get_versuch_by_id(id: i32, db: &SqlitePool) -> Result<schema::NormVersuch, i32> {
-        let versuch_result = sqlx::query_as!(model::NormVersuch, r#"
-    SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, mTime as ts_recording, isReal as is_real FROM versuch WHERE id = ?
-    "#, id).fetch_one(db).await;
-        match versuch_result {
-            Ok(r) => Ok(calc_norm_versuch(r, &db).await),
-            Err(_e) => Err(404),
-        }
     }
 
     pub async fn set_is_real(id: i32, is_real: bool, db: &SqlitePool) -> bool {
@@ -527,105 +439,11 @@ pub mod interact {
 
     pub async fn get_kategorie(id: i32, db: &SqlitePool) -> schema::Kategorie {
         let result = sqlx::query_as!(model::Kategorie, r#"
-        SELECT id, name, lauf, einheit, maxVers as max_vers, digits_before, digits_after, kateGroupIdBJS as kat_group_id FROM kategorien WHERE id = ?
+        SELECT id, name, einheit, maxVers as max_vers, digits_before, digits_after FROM kategorien WHERE id = ?
         "#, id).fetch_one(db).await;
         return kategorie_model2schema(result.unwrap());
     }
 
-    pub async fn calc_points(versuch: schema::SimpleVersuch, db: &SqlitePool) -> i32 {
-        // get kategorie for calc point
-        let kat_result = sqlx::query!(
-            r#"
-            SELECT name, a, c, kateGroupIdBJS as group_id FROM schueler
-                INNER JOIN formVars ON formVars.gesch = schueler.gesch
-                INNER JOIN kategorien ON formVars.katId = kategorien.id
-            WHERE kategorien.id = ? and schueler.id = ?
-            "#,
-            versuch.kategorie_id,
-            versuch.schueler_id
-        )
-        .fetch_one(db)
-        .await;
-
-        let kat = match kat_result {
-            Ok(k) => k,
-            Err(_e) => return -404,
-        };
-
-        let a = kat.a.unwrap();
-        let c = kat.c.unwrap();
-        let name = kat.name.unwrap();
-
-        let group_id = kat.group_id.unwrap();
-        let points = if group_id == 1 || group_id == 4 {
-            // get distance
-            // TODO: Get your distance from somewhere else this sucks
-            let name_vec: Vec<&str> = name.split("m").collect();
-            let distance = match name_vec[0].to_string().parse::<i32>() {
-                Ok(d) => d,
-                Err(_e) => return -500,
-            };
-
-            // look up zuschlag
-            let zuschlag: f32 = if distance < 301 {
-                0.24
-            } else if distance < 401 {
-                0.14
-            } else {
-                0.0
-            };
-            (((distance as f32 / (versuch.wert + zuschlag)) - a as f32) / c as f32) as i32
-        } else {
-            ((versuch.wert.sqrt() - a as f32) / c as f32) as i32
-        };
-        if points < 0 {
-            return 0;
-        } else if points > 900 {
-            return -406;
-        }
-        return points;
-    }
-
-    async fn get_medal(
-        versuch: schema::SimpleVersuch,
-        db: &SqlitePool,
-    ) -> search::search_schema::DOSBAbzeichen {
-        let change_values = match sqlx::query!(
-            "SELECT IFNULL(gold,0.0) as gold,IFNULL(silber,0.0) as silber ,IFNULL(bronze,0.0) as bronze FROM schueler
-            INNER JOIN dosbKat ON schueler.age = dosbKat.age AND schueler.gesch = dosbKat.gesch
-            WHERE schueler.id = ? AND dosbKat.katId = ?;",
-            versuch.schueler_id,
-            versuch.kategorie_id
-        )
-        .fetch_one(db)
-        .await
-        {
-            Ok(r) => r,
-            Err(_) => return search::search_schema::DOSBAbzeichen::None,
-        };
-
-        return if change_values.bronze < change_values.gold {
-            if change_values.gold - 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::Gold
-            } else if change_values.silber - 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::Silber
-            } else if change_values.bronze - 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::Bronze
-            } else {
-                search::search_schema::DOSBAbzeichen::None
-            }
-        } else {
-            if change_values.bronze + 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::None
-            } else if change_values.silber + 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::Bronze
-            } else if change_values.gold + 0.01 < versuch.wert as f64 {
-                search::search_schema::DOSBAbzeichen::Silber
-            } else {
-                search::search_schema::DOSBAbzeichen::Gold
-            }
-        };
-    }
 
     async fn check_kategorie_id(id: &i32, db_con: &SqlitePool) -> bool {
         let query_response = sqlx::query(
@@ -643,40 +461,11 @@ pub mod interact {
         };
     }
 
-    fn pflicht_kat_model2schema(m: model::PflichtKategorie) -> schema::PflichtKategorie {
-        schema::PflichtKategorie {
-            id: m.id.unwrap(),
-            done: m.done != 0,
-            group_id: m.group_id.unwrap(),
-        }
-    }
-
-    async fn calc_norm_versuch(v: model::NormVersuch, db: &SqlitePool) -> schema::NormVersuch {
-        schema::NormVersuch {
-            id: v.id.unwrap(),
-            schueler_id: v.schueler_id.unwrap(),
-            kategorie_id: v.kategorie_id.unwrap(),
-            wert: (v.wert.unwrap() * 100.0).round() / 100.0,
-            punkte: calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: v.schueler_id.unwrap() as i32,
-                    wert: v.wert.unwrap() as f32,
-                    kategorie_id: v.kategorie_id.unwrap() as i32,
-                },
-                db,
-            )
-            .await
-            .into(),
-            ts_recording: v.ts_recording.unwrap(),
-            is_real: v.is_real.unwrap(),
-        }
-    }
-
     fn kategorie_model2schema(m: model::Kategorie) -> schema::Kategorie {
         schema::Kategorie {
             id: m.id.unwrap(),
             name: m.name.unwrap(),
-            lauf: m.lauf.unwrap(),
+            lauf: false,
             einheit: m
                 .einheit
                 .unwrap()
@@ -686,7 +475,7 @@ pub mod interact {
             max_vers: m.max_vers.unwrap(),
             digits_before: m.digits_before.unwrap(),
             digits_after: m.digits_after.unwrap(),
-            kat_group_id: m.kat_group_id.unwrap(),
+            kat_group_id: 0,
         }
     }
 
@@ -697,410 +486,4 @@ pub mod interact {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use time_test::time_test;
-
-    async fn migrate_example_db() -> SqlitePool {
-        let con = SqlitePool::connect(":memory:").await.unwrap();
-        sqlx::migrate!().run(&con).await.unwrap();
-        return con;
-    }
-
-    #[actix_rt::test]
-    async fn test_db_migration() {
-        let _ = migrate_example_db().await;
-    }
-
-    #[actix_rt::test]
-    async fn get_schueler() {
-        let db = SqlitePool::connect("db/emotion1.db").await.unwrap();
-        let result = interact::get_schueler(&5327, &db).await;
-        println!("{:#?}", result);
-    }
-
-    #[actix_rt::test]
-    async fn get_dosb_schueler() {
-        let db = migrate_example_db().await;
-        let test_result = interact::get_dosb_task_for_schueler(1234, &db)
-            .await
-            .unwrap();
-        assert_eq!(
-            r#"[{"done":false,"group_id":1,"id":3},{"done":false,"group_id":2,"id":6},{"done":false,"group_id":2,"id":7},{"done":false,"group_id":3,"id":10},{"done":false,"group_id":4,"id":4}]"#,
-            format!("{}", serde_json::json!(test_result))
-        );
-    }
-
-    #[actix_rt::test]
-    async fn calc_points() {
-        let db = migrate_example_db().await;
-
-        // 50m Lauf 8.4 -> 324 (w)
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 8.4,
-                    kategorie_id: 1
-                },
-                &db
-            )
-            .await,
-            324
-        );
-
-        // 800m Lauf 180 -> 329 (m)
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 3809,
-                    wert: 180.0,
-                    kategorie_id: 4
-                },
-                &db
-            )
-            .await,
-            329
-        );
-
-        // 200g Ballwurf 27.5 -> 266 (m)
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 3809,
-                    wert: 27.5,
-                    kategorie_id: 10
-                },
-                &db
-            )
-            .await,
-            266
-        );
-
-        // kat out of range
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 3809,
-                    wert: 27.5,
-                    kategorie_id: 123
-                },
-                &db
-            )
-            .await,
-            -404
-        );
-
-        // schuelerId out of range
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 309,
-                    wert: 27.5,
-                    kategorie_id: 3
-                },
-                &db
-            )
-            .await,
-            -404
-        );
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 35409,
-                    wert: 27.5,
-                    kategorie_id: 3
-                },
-                &db
-            )
-            .await,
-            -404
-        );
-
-        // points lower than 0 or higher than 900
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 3809,
-                    wert: 3.0,
-                    kategorie_id: 3
-                },
-                &db
-            )
-            .await,
-            -406
-        );
-        assert_eq!(
-            interact::calc_points(
-                schema::SimpleVersuch {
-                    schueler_id: 3809,
-                    wert: 3.0,
-                    kategorie_id: 10
-                },
-                &db
-            )
-            .await,
-            0
-        );
-    }
-
-    #[actix_rt::test]
-    async fn add_get_versuch() {
-        let db = migrate_example_db().await;
-        let v1 = schema::SimpleVersuch {
-            schueler_id: 1234,
-            wert: 15.0,
-            kategorie_id: 10,
-        };
-        let v1_copy = schema::SimpleVersuch {
-            schueler_id: 1234,
-            wert: 15.0,
-            kategorie_id: 10,
-        };
-        let v1_id = interact::add_versuch(v1, "ABCA".to_string(), &db)
-            .await
-            .unwrap();
-        let get_v1 = interact::get_versuch_by_id(v1_id, &db).await.unwrap();
-
-        assert_eq!(&v1_copy.schueler_id, &(get_v1.schueler_id as i32));
-        assert_eq!(&v1_copy.wert, &(get_v1.wert as f32));
-        assert_eq!(&v1_copy.kategorie_id, &(get_v1.kategorie_id as i32));
-    }
-
-    #[actix_rt::test]
-    async fn top_versuch_by_kat() {
-        let db = migrate_example_db().await;
-        let v1 = schema::SimpleVersuch {
-            schueler_id: 1234,
-            wert: 15.0,
-            kategorie_id: 10,
-        };
-        let current_top = schema::SimpleVersuch {
-            schueler_id: 1234,
-            wert: 15.0,
-            kategorie_id: 10,
-        };
-        let _ = interact::add_versuch(v1, "ABCA".to_string(), &db).await;
-
-        // only one try
-        let test_top = interact::get_top_versuch_by_kat(1234, 10, &db)
-            .await
-            .unwrap();
-        assert_eq!(&current_top.schueler_id, &(test_top.schueler_id as i32));
-        assert_eq!(&current_top.wert, &(test_top.wert as f32));
-        assert_eq!(&current_top.kategorie_id, &(test_top.kategorie_id as i32));
-
-        let current_top = schema::SimpleVersuch {
-            schueler_id: 1234,
-            wert: 17.0,
-            kategorie_id: 10,
-        };
-        let _ = interact::add_versuch(
-            schema::SimpleVersuch {
-                schueler_id: 1234,
-                wert: 17.0,
-                kategorie_id: 10,
-            },
-            "AWDF".to_string(),
-            &db,
-        )
-        .await;
-
-        // new Top try
-        let test_top = interact::get_top_versuch_by_kat(1234, 10, &db)
-            .await
-            .unwrap();
-        assert_eq!(&current_top.schueler_id, &(test_top.schueler_id as i32));
-        assert_eq!(&current_top.wert, &(test_top.wert as f32));
-        assert_eq!(&current_top.kategorie_id, &(test_top.kategorie_id as i32));
-
-        let _ = interact::add_versuch(
-            schema::SimpleVersuch {
-                schueler_id: 1234,
-                wert: 14.0,
-                kategorie_id: 10,
-            },
-            "AWDF".to_string(),
-            &db,
-        )
-        .await;
-
-        // new Top try
-        time_test!();
-        let test_top = interact::get_top_versuch_by_kat(1234, 10, &db)
-            .await
-            .unwrap();
-        assert_eq!(&current_top.schueler_id, &(test_top.schueler_id as i32));
-        assert_eq!(&current_top.wert, &(test_top.wert as f32));
-        assert_eq!(&current_top.kategorie_id, &(test_top.kategorie_id as i32));
-    }
-
-    #[actix_rt::test]
-    async fn top_versuche_and_points_by_bjs() {
-        let db = migrate_example_db().await;
-        let mut versuch_ids: Vec<i32> = Vec::new();
-        let _ = interact::add_versuch(
-            schema::SimpleVersuch {
-                schueler_id: 1234,
-                wert: 10.7,
-                kategorie_id: 1,
-            },
-            "AWDF".to_string(),
-            &db,
-        )
-        .await;
-        versuch_ids.push(
-            interact::add_versuch(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 14.0,
-                    kategorie_id: 3,
-                },
-                "AWDF".to_string(),
-                &db,
-            )
-            .await
-            .unwrap(),
-        );
-        let _ = interact::add_versuch(
-            schema::SimpleVersuch {
-                schueler_id: 1234,
-                wert: 15.0,
-                kategorie_id: 3,
-            },
-            "AWDF".to_string(),
-            &db,
-        )
-        .await;
-        versuch_ids.push(
-            interact::add_versuch(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 3.7,
-                    kategorie_id: 7,
-                },
-                "AWDF".to_string(),
-                &db,
-            )
-            .await
-            .unwrap(),
-        );
-        versuch_ids.push(
-            interact::add_versuch(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 1.4,
-                    kategorie_id: 6,
-                },
-                "AWDF".to_string(),
-                &db,
-            )
-            .await
-            .unwrap(),
-        );
-        versuch_ids.push(
-            interact::add_versuch(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 14.0,
-                    kategorie_id: 10,
-                },
-                "AWDF".to_string(),
-                &db,
-            )
-            .await
-            .unwrap(),
-        );
-        versuch_ids.push(
-            interact::add_versuch(
-                schema::SimpleVersuch {
-                    schueler_id: 1234,
-                    wert: 702.0,
-                    kategorie_id: 5,
-                },
-                "AWDF".to_string(),
-                &db,
-            )
-            .await
-            .unwrap(),
-        );
-        let _ = interact::add_versuch(
-            schema::SimpleVersuch {
-                schueler_id: 3809,
-                wert: 242.0,
-                kategorie_id: 4,
-            },
-            "AWDF".to_string(),
-            &db,
-        )
-        .await;
-
-        //time_test!();
-        //let mut result_ids: Vec<i32> = Vec::new();
-
-        let result = interact::get_top_versuch_in_bjs(1234, &db).await.unwrap();
-        let mut result_ids: Vec<i32> = result.into_iter().map(|v| v.id as i32).collect();
-
-        result_ids.sort();
-        versuch_ids.sort();
-        assert_eq!(versuch_ids, result_ids);
-
-        assert_eq!(1126, interact::get_bjs_points(1234, &db).await.unwrap());
-    }
-
-    #[actix_rt::test]
-    async fn get_bjs_kat_groups() {
-        let db = migrate_example_db().await;
-        let test = interact::get_bjs_kat_groups(1234, &db).await;
-        assert_eq!(test, vec![vec![2, 3], vec![6, 7], vec![10], vec![4, 5]]);
-    }
-
-    #[actix_rt::test]
-    async fn need_kat() {
-        let db = migrate_example_db().await;
-        let kat3 = interact::needs_kat(1234, 3, &db).await.unwrap();
-        assert!(kat3.bjs);
-        assert!(kat3.dosb);
-
-        let kat5 = interact::needs_kat(1234, 5, &db).await.unwrap();
-        assert!(kat5.bjs);
-        assert!(!kat5.dosb);
-
-        let kat1 = interact::needs_kat(1234, 1, &db).await.unwrap();
-        assert!(!kat1.bjs);
-        assert!(!kat1.dosb);
-    }
-
-    #[sqlx::test]
-    async fn debuging_2024_12_year_not_right() {
-        let db = SqlitePool::connect("db/emotion24.db").await.unwrap();
-
-        // check if there are any medals
-        let dosb_best_trys = interact::get_top_versuch_in_dosb(5541, &db).await.unwrap();
-        let mut dosb_best_trys_medals = dosb_best_trys.into_iter().map(|x| x.dosb);
-        assert!(dosb_best_trys_medals.all(|x| -> bool { if let search::search_schema::DOSBAbzeichen::None = x {
-            true
-        } else {
-            false
-        }}));
-
-        // test if the right dosb kategorien will be returned 
-        // currently fails :(
-        let dosb_tasks = interact::get_dosb_task_for_schueler(5541, &db).await.unwrap();
-        let mut dosb_tasks_ids: Vec<i64> = dosb_tasks.into_iter().map(|x| -> i64 {x.id}).collect::<Vec<i64>>();
-        dosb_tasks_ids.sort();
-        assert_eq!(dosb_tasks_ids, vec![4, 6, 7, 8, 9, 10]);
-    }
-
-    #[sqlx::test]
-    async fn debug_5513() {
-        let db = SqlitePool::connect("testData/eMotionday24.db").await.unwrap();
-
-        let dosb_pocal = interact::get_schueler(&5513, &db).await.unwrap();
-        println!("{:#?}", dosb_pocal);
-
-
-        panic!("Worked")
-    }
-
-
 }

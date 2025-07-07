@@ -2,7 +2,6 @@ CREATE TABLE kategorien(
     id INTEGER,
     name VARCHAR(255),
     einheit CHAR,
-    lauf BOOLEAN,
     maxVers INT, 
     digits_before INT,
     digits_after INT,
@@ -24,15 +23,15 @@ CREATE TABLE schueler(
     PRIMARY KEY(id)
 );
 
+
 CREATE TABLE versuch(
     id INT NOT NULL,
     aufsichtId VARCHAR(10) NOT NULL,
     schuelerId INT NOT NULL, 
     kategorieId INT NOT NULL, 
-    wert DOUBLE, 
-    punkte INT, 
-    mTime INT, 
-    isReal boolean,
+    wert DOUBLE NOT NULL, 
+    mTime INT NOT NULL, 
+    isReal boolean NOT NULL,
     PRIMARY KEY (id), 
     FOREIGN KEY (schuelerId) REFERENCES schueler(id),
     FOREIGN KEY (kategorieId) REFERENCES kategorien(id)
@@ -64,7 +63,9 @@ CREATE TABLE user_session (
 
 CREATE TABLE category(
     id INT PRIMARY KEY NOT NULL,
-    category_group_id INT NOT NULL
+    category_group_id INT NOT NULL,
+    running BOOLEAN NOT NULL,
+    distance INT
 );
 
 CREATE TABLE category_group(
@@ -82,15 +83,15 @@ CREATE TABLE mand_category(
 );
 
 CREATE TABLE form_vars(
-    category_id INT,
-    gender CHAR,
-    a DOUBLE,
-    c DOUBLE
+    category_id INT NOT NULL,
+    gender CHAR NOT NULL,
+    a DOUBLE NOT NULL,
+    c DOUBLE NOT NULL
 );
 
 CREATE TABLE points_eval(
-    age INT,
-    gender CHAR,
-    winner INT,
-    honor INT
+    age INT NOT NULL,
+    gender CHAR NOT NULL,
+    winner INT NOT NULL,
+    honor INT NOT NULL
 );

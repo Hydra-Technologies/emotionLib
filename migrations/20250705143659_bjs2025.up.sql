@@ -1,7 +1,8 @@
 CREATE TABLE category(
     id INT PRIMARY KEY NOT NULL,
-    category_group_id INT NOT NULL
-    running BOOLEAN,
+    category_group_id INT NOT NULL,
+    running BOOLEAN NOT NULL,
+    distance INT
 );
 
 CREATE TABLE category_group(
@@ -12,19 +13,271 @@ CREATE TABLE category_group(
 CREATE TABLE mand_category(
     age INT NOT NULL,
     gender CHAR NOT NULL,
-    category_id INT NOT NULL,
+    category_id INT NOT NULL
 );
 
 CREATE TABLE form_vars(
-    category_id INT,
-    gender CHAR,
-    a DOUBLE,
-    c DOUBLE
+    category_id INT NOT NULL,
+    gender CHAR NOT NULL,
+    a DOUBLE NOT NULL,
+    c DOUBLE NOT NULL
 );
 
 CREATE TABLE points_eval(
-    age INT,
-    gender CHAR,
-    winner INT,
-    honor INT
+    age INT NOT NULL,
+    gender CHAR NOT NULL,
+    winner INT NOT NULL,
+    honor INT NOT NULL
 );
+
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (10,'w',625,825);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (11,'w',700,900);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (12,'w',775,975);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (13,'w',825,1025);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (14,'w',850,1050);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (15,'w',875,1075);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (16,'w',900,1100);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (17,'w',925,1125);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (18,'w',950,1150);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (19,'w',950,1150);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (20,'w',950,1150);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (10,'m',600,775);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (11,'m',675,875);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (12,'m',750,975);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (13,'m',825,1050);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (14,'m',900,1125);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (15,'m',975,1225);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (16,'m',1050,1325);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (17,'m',1125,1400);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (18,'m',1200,1475);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (19,'m',1275,1550);
+INSERT INTO points_eval(age,gender,winner,honor) VALUES (20,'m',1275,1550);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (1,1,1,50);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (1,'m',3.79,0.0069);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (1,'w',3.648,0.0066);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',1);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',1);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (2,1,1,75);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (2,'m',4.1,0.00664);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (2,'w',3.998,0.0066);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',2);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',2);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',2);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',2);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',2);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',2);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (3,1,1,100);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (3,'m',4.341,0.00676);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (3,'w',4.0062,0.00656);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',3);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',3);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (4,2,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (4,'m',1.15028,0.00219);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (4,'w',1.0935,0.00208);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',4);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',4);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (5,2,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (5,'m',0.841,0.0008);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (5,'w',0.8807,0.00068);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',5);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',5);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (6,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (6,'m',2.8,0.011);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (6,'w',2.0232,0.00874);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',6);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',6);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',6);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',6);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',6);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',6);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (7,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (7,'m',1.936,0.0124);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (7,'w',1.4149,0.01039);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',7);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',7);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (8,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (8,'m',1.425,0.0037);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (8,'w',1.279,0.00398);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',8);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',8);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (9,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (9,'m',1.425,0.0037);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (9,'w',1.279,0.00398);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',9);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',9);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',9);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',9);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',9);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (10,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (10,'m',1.425,0.0037);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (10,'w',1.279,0.00398);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',10);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',10);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (11,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (11,'m',1.425,0.0037);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (11,'w',1.279,0.00398);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',11);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',11);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (12,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (12,'m',1.425,0.0037);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (12,'w',1.279,0.00398);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',12);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (13,3,0,NULL);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (13,'m',1.595,0.009125);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (13,'w',1.085,0.00921);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',13);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',13);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (14,4,1,800);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (14,'m',2.325,0.00644);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (14,'w',2.0232,0.00647);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',14);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',14);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (15,4,1,1000);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (15,'m',2.158,0.006);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (15,'w',0,0);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',15);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',15);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (16,4,1,2000);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (16,'m',1.784,0.006);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (16,'w',1.8,0.0054);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'m',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'m',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'m',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'m',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (10,'w',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (11,'w',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (12,'w',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (13,'w',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'w',16);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'w',16);
+INSERT INTO category(id, category_group_id, running, distance) VALUES (17,4,1,3000);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (17,'m',1.7,0.0058);
+INSERT INTO form_vars(category_id, gender, a, c) VALUES (17,'w',1.75,0.005);
+INSERT INTO mand_category(age, gender, category_id) VALUES (14,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (15,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'m',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (16,'w',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (17,'w',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (18,'w',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (19,'w',17);
+INSERT INTO mand_category(age, gender, category_id) VALUES (20,'w',17);

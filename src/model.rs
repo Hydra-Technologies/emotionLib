@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
+#[derive(Debug, Deserialize, Serialize, sqlx::FromRow, Clone, Copy, PartialEq)]
 pub struct Attempt {
     pub category: i64,
     pub result: f64
@@ -41,12 +41,12 @@ pub struct SimpleKategorie {
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]
 pub struct NormVersuch {
-    pub id: Option<i64>,
-    pub schueler_id: Option<i64>,
-    pub kategorie_id: Option<i64>,
-    pub wert: Option<f64>,
-    pub ts_recording: Option<i64>,
-    pub is_real: Option<bool>,
+    pub id: i64,
+    pub schueler_id: i64,
+    pub kategorie_id: i64,
+    pub wert: f64,
+    pub ts_recording: i64,
+    pub is_real: bool,
 }
 
 #[derive(Debug, Deserialize, Serialize, sqlx::FromRow)]

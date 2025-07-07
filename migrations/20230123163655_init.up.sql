@@ -29,10 +29,9 @@ CREATE TABLE versuch(
     aufsichtId VARCHAR(10) NOT NULL,
     schuelerId INT NOT NULL, 
     kategorieId INT NOT NULL, 
-    wert DOUBLE, 
-    punkte INT, 
-    mTime INT, 
-    isReal boolean,
+    wert DOUBLE NOT NULL, 
+    mTime INT NOT NULL, 
+    isReal boolean NOT NULL,
     PRIMARY KEY (id), 
     FOREIGN KEY (schuelerId) REFERENCES schueler(id),
     FOREIGN KEY (kategorieId) REFERENCES kategorien(id)
