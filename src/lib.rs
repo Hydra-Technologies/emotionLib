@@ -291,7 +291,7 @@ pub mod interact {
                 id: att.id,
                 schueler_id: att.schueler_id,
                 kategorie_id: att.kategorie_id,
-                wert: att.wert,
+                wert: (att.wert*100.0).round()/100.0,
                 punkte: bjs_evaluator.calculate_points(gender, &Attempt { category:  att.kategorie_id, result: att.wert }).await?,
                 ts_recording: att.ts_recording,
                 is_real: att.is_real
@@ -334,7 +334,7 @@ pub mod interact {
                 id: att.id,
                 schueler_id: att.schueler_id,
                 kategorie_id: att.kategorie_id,
-                wert: att.wert,
+                wert: (att.wert*100.0).round()/100.0,
                 dosb: dosb_evaluator.get_medal_for_attempt(age, gender, &Attempt { category:  att.kategorie_id, result: att.wert }).await?,
                 ts_recording: att.ts_recording,
                 is_real: att.is_real

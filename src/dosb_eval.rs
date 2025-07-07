@@ -121,30 +121,30 @@ impl DOSBEvaluator<'_> {
         // check if bigger is better or the other way around
         if threshholds.bronze < threshholds.silver {
             // if so we can check one by one wich medal is applied
-            if att.result < threshholds.bronze {
+            if att.result  < threshholds.bronze - 0.01 {
                 return Ok(DOSBAbzeichen::None)
             }
 
-            if att.result < threshholds.silver {
+            if att.result < threshholds.silver - 0.01 {
                 return Ok(DOSBAbzeichen::Bronze)
             }
 
-            if att.result < threshholds.gold {
+            if att.result < threshholds.gold - 0.01 {
                 return Ok(DOSBAbzeichen::Silver)
             }
 
             return Ok(DOSBAbzeichen::Gold)
         } else {
             // if so we can check one by one wich medal is applied
-            if att.result > threshholds.bronze {
+            if att.result > threshholds.bronze + 0.01 {
                 return Ok(DOSBAbzeichen::None)
             }
 
-            if att.result > threshholds.silver {
+            if att.result > threshholds.silver + 0.01 {
                 return Ok(DOSBAbzeichen::Bronze)
             }
 
-            if att.result > threshholds.gold {
+            if att.result > threshholds.gold + 0.01 {
                 return Ok(DOSBAbzeichen::Silver)
             }
 
