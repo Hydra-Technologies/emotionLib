@@ -47,7 +47,6 @@ impl BJSEvaluator<'_> {
         for k in &done_needed_categories {
             done_groups[(k.group_id - 1) as usize]  = true;
         }
-        println!("Done_groups: {:?}", done_groups);
 
         // order the groups into the right vetors if the group is not done
         let mut missing = vec![vec![],vec![],vec![],vec![]];
