@@ -97,10 +97,23 @@ pub mod interact {
     ) -> Result<Vec<Vec<i64>>, HttpResponse> {
         let attempts = get_attempts(id.clone() as i64, db).await?;
         let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+        let event_categorys: Vec<i64> = match sqlx::query!("SELECT id FROM kategorien").fetch_all(db).await {
+            Ok(e) => e.into_iter().map(|v| v.id).collect(),
+            Err(e) => return Err(InternalServerf!("Error while getting the categorys of the Event {}", e))
+        };
+
         let dosb_evaluator = DOSBEvaluator {
             db: dosb_db
         };
-        return dosb_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await
+        let all_cat = dosb_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await?;
+
+        let mut filtered_cat = vec![];
+        for c in all_cat {
+            filtered_cat.push(
+                c.into_iter().filter(|c| event_categorys.contains(c)).collect()
+                )
+        }
+        return Ok(filtered_cat);
     }
 
     pub async fn get_bjs_task_for_schueler(
@@ -110,10 +123,23 @@ pub mod interact {
     ) -> Result<Vec<Vec<i64>>, HttpResponse> {
         let attempts = get_attempts(id.clone() as i64, db).await?;
         let (age, gender) = get_schueler_data(id.clone() as i64, db).await?;
+        let event_categorys: Vec<i64> = match sqlx::query!("SELECT id FROM kategorien").fetch_all(db).await {
+            Ok(e) => e.into_iter().map(|v| v.id).collect(),
+            Err(e) => return Err(InternalServerf!("Error while getting the categorys of the Event {}", e))
+        };
+
         let bjs_evaluator = DOSBEvaluator {
             db: bjs_db 
         };
-        return bjs_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await
+        let all_cat = bjs_evaluator.get_missing_categorys(age, gender, attempts.iter().map(|a| a.category).collect()).await?;
+
+        let mut filtered_cat = vec![];
+        for c in all_cat {
+            filtered_cat.push(
+                c.into_iter().filter(|c| event_categorys.contains(c)).collect()
+                )
+        }
+        return Ok(filtered_cat);
     }
 
     pub async fn upload_schueler(
