@@ -10,9 +10,9 @@ use log::debug;
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum BJSAbzeichen {
-    Attendee,
-    Winner,
-    Honor
+    Teilnehmer,
+    Gewinner,
+    Ehren
 }
 
 pub struct BJSEvaluator<'a> {
@@ -178,7 +178,7 @@ impl BJSEvaluator<'_> {
         }
         // if you dont have enough categorygroups you dont get a medal
         if num_of_done_categories < 3 {
-            return Ok(BJSAbzeichen::Attendee)
+            return Ok(BJSAbzeichen::Teilnehmer)
         }
 
         let point_sum = self.calculate_points_sum(age, gender, attempts).await?;
@@ -191,11 +191,11 @@ impl BJSEvaluator<'_> {
         };
 
         return if point_sum < thresholds.winner {
-            Ok(BJSAbzeichen::Attendee)
+            Ok(BJSAbzeichen::Teilnehmer)
         } else if point_sum < thresholds.honor {
-            Ok(BJSAbzeichen::Winner)
+            Ok(BJSAbzeichen::Gewinner)
         } else {
-            Ok(BJSAbzeichen::Honor)
+            Ok(BJSAbzeichen::Ehren)
         }
     }
 }
@@ -260,7 +260,7 @@ mod tests {
         assert_eq!(eval.calculate_points(gender, &attempts[3]).await.unwrap(), 200, "80g Schlagball");
 
         // now for the medal of all
-        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Honor);
+        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Ehren);
     }
 
     #[sqlx::test]
@@ -334,7 +334,7 @@ mod tests {
         assert_eq!(eval.calculate_points(gender, &attempts[5]).await.unwrap(), 340, "80g Schlagball");
 
         // now for the medal of all
-        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Winner);
+        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Gewinner);
     }
 
     #[sqlx::test]
@@ -372,6 +372,6 @@ mod tests {
         assert_eq!(missing[3].len(), 0);
 
         // now for the medal of all
-        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Attendee);
+        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Teilnehmer);
     }
 }

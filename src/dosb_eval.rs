@@ -12,7 +12,7 @@ use log::debug;
 pub enum DOSBAbzeichen {
     None = 0,
     Bronze = 1,
-    Silver = 2,
+    Silber = 2,
     Gold = 3,
 }
 
@@ -130,7 +130,7 @@ impl DOSBEvaluator<'_> {
             }
 
             if att.result < threshholds.gold - 0.01 {
-                return Ok(DOSBAbzeichen::Silver)
+                return Ok(DOSBAbzeichen::Silber)
             }
 
             return Ok(DOSBAbzeichen::Gold)
@@ -145,7 +145,7 @@ impl DOSBEvaluator<'_> {
             }
 
             if att.result > threshholds.gold + 0.01 {
-                return Ok(DOSBAbzeichen::Silver)
+                return Ok(DOSBAbzeichen::Silber)
             }
 
             return Ok(DOSBAbzeichen::Gold)
@@ -202,7 +202,7 @@ impl DOSBEvaluator<'_> {
         } else if medal_sum < 8 {
             Ok(DOSBAbzeichen::Bronze)
         } else if medal_sum < 11 {
-            Ok(DOSBAbzeichen::Silver)
+            Ok(DOSBAbzeichen::Silber)
         } else {
             Ok(DOSBAbzeichen::Gold)
         }
@@ -266,7 +266,7 @@ mod tests {
         assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[0]).await.unwrap(), DOSBAbzeichen::Gold, "Weitsprung");
         assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[1]).await.unwrap(), DOSBAbzeichen::Gold, "800m Lauf");
         assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[2]).await.unwrap(), DOSBAbzeichen::Gold, "50m Lauf");
-        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[3]).await.unwrap(), DOSBAbzeichen::Silver, "80g Schlagball");
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[3]).await.unwrap(), DOSBAbzeichen::Silber, "80g Schlagball");
 
         // now for the medal of all
         assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), DOSBAbzeichen::Gold);
