@@ -382,12 +382,12 @@ pub mod interact {
         versuch: schema::SimpleVersuch,
         vouch_name: String,
         db: &SqlitePool,
-    ) -> Result<i32, i32> {
+    ) -> Result<i32, HttpResponse> {
         if !check_schueler_id(&versuch.schueler_id) {
-            return Err(400);
+            return Err(NotFoundf!("The schueler with the id {} was not found", versuch.schueler_id));
         }
         if !check_kategorie_id(&versuch.kategorie_id, db).await {
-            return Err(400);
+            return Err(NotFoundf!("The category {} was not found", versuch.kategorie_id));
         }
 
         // get Current time
