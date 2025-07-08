@@ -10,8 +10,9 @@ use log::debug;
 #[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum BJSAbzeichen {
+    None,
     Teilnehmer,
-    Gewinner,
+    Sieger,
     Ehren
 }
 
@@ -124,6 +125,10 @@ impl BJSEvaluator<'_> {
             ((att.result.sqrt() - a)/c) as i64
         };
 
+        if points < 0 {
+            return Ok(0)
+        }
+
         return Ok(points)
     }
 
@@ -166,6 +171,10 @@ impl BJSEvaluator<'_> {
    }
 
     pub async fn get_medal(&self, age: i64, gender: char, attempts: Vec<Attempt>) -> Result<BJSAbzeichen,HttpResponse> {
+        if attempts.len() == 0 {
+            return Ok(BJSAbzeichen::None)
+        }
+
         let gender_string = gender.to_string();
         // chech if at least 3 categories are done
         let done_categories = attempts.iter().map(|a| a.category).collect();
@@ -193,7 +202,7 @@ impl BJSEvaluator<'_> {
         return if point_sum < thresholds.winner {
             Ok(BJSAbzeichen::Teilnehmer)
         } else if point_sum < thresholds.honor {
-            Ok(BJSAbzeichen::Gewinner)
+            Ok(BJSAbzeichen::Sieger)
         } else {
             Ok(BJSAbzeichen::Ehren)
         }
@@ -334,7 +343,7 @@ mod tests {
         assert_eq!(eval.calculate_points(gender, &attempts[5]).await.unwrap(), 340, "80g Schlagball");
 
         // now for the medal of all
-        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Gewinner);
+        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), BJSAbzeichen::Sieger);
     }
 
     #[sqlx::test]
