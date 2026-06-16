@@ -37,7 +37,7 @@ pub mod interact {
 
     async fn get_attempts(id: i64, db: &SqlitePool) -> Result<Vec<Attempt>,HttpResponse>{
         // get all attempts of the student
-        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ?", id).fetch_all(db).await {
+        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? AND isReal = true", id).fetch_all(db).await {
             Ok(r) => r,
             Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, id))
         };
@@ -223,7 +223,7 @@ pub mod interact {
         kat_id: i32,
         db: &SqlitePool,
     ) -> Result<Vec<model::NormVersuch>, HttpResponse> {
-        return match sqlx::query_as!(model::NormVersuch, "SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch WHERE schuelerId = ? AND kategorieId = ?", id, kat_id).fetch_all(db).await {
+        return match sqlx::query_as!(model::NormVersuch, "SELECT id, schuelerId as schueler_id, kategorieId as kategorie_id, wert, isReal as is_real, mTime as ts_recording FROM versuch WHERE schuelerId = ? AND kategorieId = ? AND isReal = true", id, kat_id).fetch_all(db).await {
             Ok(r) => Ok(r),
             Err(e) => Err(InternalServerf!("There was an error with the query {}",e))
         };
@@ -237,7 +237,7 @@ pub mod interact {
         bjs_db: &SqlitePool,
     ) -> Result<model::NormVersuch, HttpResponse> {
         // get all attempts of the student
-        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? AND kategorieId = ?", id, kat_id).fetch_all(db).await {
+        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? AND kategorieId = ? and isReal = true", id, kat_id).fetch_all(db).await {
             Ok(r) => r,
             Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, id))
         };

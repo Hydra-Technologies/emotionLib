@@ -36,7 +36,7 @@ pub async fn search_database(
         let id = schueler.id.unwrap();
         let age = schueler.age.unwrap();
         let gender= schueler.gesch.unwrap().chars().nth(0).unwrap();
-        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ?", id).fetch_all(db).await {
+        let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? AND isReal = true", id).fetch_all(db).await {
             Ok(r) => r,
             Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, id))
         };
@@ -106,7 +106,7 @@ pub async fn result2extensive(
     let age = schueler.age.unwrap();
     let gender= schueler.gesch.unwrap().chars().nth(0).unwrap();
 
-    let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ?", result.id).fetch_all(db).await {
+    let attempts_rec = match sqlx::query!("SELECT kategorieId as category, wert as result FROM versuch WHERE schuelerId = ? and isReal = true", result.id).fetch_all(db).await {
         Ok(r) => r,
         Err(e) => return Err(InternalServerf!("There was an Error getting the schueler attempts from the database {} for schueler {}", e, result.id))
     };
