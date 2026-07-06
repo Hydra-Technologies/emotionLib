@@ -178,6 +178,13 @@ impl DOSBEvaluator<'_> {
         // add the medals 
         let mut medal_sum = 0;
         for att in attemps_with_group.into_iter().map(|c| c.1.1) {
+            // if one of the best attempts is None
+            // then this category group is not finished
+            // so no medal
+            // TODO: This may not be the best place to check this
+            if att == DOSBAbzeichen::None {
+                return Ok(0)
+            }
             medal_sum += att as u8;
         }
 
@@ -385,6 +392,80 @@ mod tests {
         assert_eq!(missing[1].len(), 0);
         assert!(missing[2].len() > 0);
         assert_eq!(missing[3].len(), 0);
+
+        // now for the medal of all
+        assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), DOSBAbzeichen::None);
+    }
+
+   
+    // all categories are done but in one there is no medal
+    #[sqlx::test]
+    async fn schueler_5251_2026() {
+        // create evaluator
+        let eval = DOSBEvaluator {
+            db: &SqlitePool::connect("testData/2025dosb.db").await.unwrap()
+        };
+
+        let mut attempts = vec![];
+        let age = 14;
+        let gender = 'm';
+
+        // Weitsprung
+        attempts.push(
+            Attempt {
+                category: 4,
+                result: 4.1
+            }
+        );
+
+        // 800m Lauf
+        attempts.push(
+            Attempt {
+                category: 14,
+                result: 188.0
+            }
+        );
+
+        // Standweitsprung
+        attempts.push(
+            Attempt {
+                category: 18,
+                result: 1.85
+            }
+        );
+
+        // 100m Lauf
+        attempts.push(
+            Attempt {
+                category: 3,
+                result: 14.6
+            }
+        );
+
+        // Hochsprung
+        attempts.push(
+            Attempt {
+                category: 5,
+                result: 1.3
+            }
+        );
+
+        // there are no categories missing
+        /*
+        let missing = eval.get_missing_categorys(age, gender, 
+            attempts.iter().map(|a| a.category).collect()).await.unwrap();
+        assert_eq!(missing[0].len(), 0);
+        assert_eq!(missing[1].len(), 0);
+        assert_eq!(missing[2].len(), 0);
+        assert_eq!(missing[3].len(), 0);
+        */
+
+        // now we check the medal for each of these
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[0]).await.unwrap(), DOSBAbzeichen::Silber, "Weitsprung");
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[1]).await.unwrap(), DOSBAbzeichen::Silber, "800m Lauf");
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[2]).await.unwrap(), DOSBAbzeichen::None, "Standweitsprung");
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[3]).await.unwrap(), DOSBAbzeichen::Silber, "100m Lauf");
+        assert_eq!(eval.get_medal_for_attempt(age, gender, &attempts[4]).await.unwrap(), DOSBAbzeichen::Gold, "Hochsprung");
 
         // now for the medal of all
         assert_eq!(eval.get_medal(age, gender, attempts).await.unwrap(), DOSBAbzeichen::None);
